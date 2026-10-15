@@ -23,6 +23,11 @@ const generators={
 ()=>{let x=rand(-5,5),y=rand(-5,5),u=rand(-5,5),v=rand(-5,5);return {q:'Quelle est l’ordonnée du milieu de A('+x+' ; '+y+') et B('+u+' ; '+v+') ?',v:(y+v)/2,wrong:[y+v,(x+u)/2,(y-v)/2]};}
 ],
 3:[
+()=>{let a=rand(2,6),b=rand(1,9),c=rand(2,6),d=rand(1,9);return {q:'Développer ('+a+'x + '+b+')('+c+'x + '+d+'). Quel est le coefficient de x² ?',v:a*c,wrong:[a+c,a*d+b*c,b*d]};},
+()=>{let a=rand(2,6),b=rand(1,9),c=rand(2,6),d=rand(1,9);return {q:'Développer ('+a+'x + '+b+')('+c+'x + '+d+'). Quel est le coefficient de x ?',v:a*d+b*c,wrong:[a*c,b*d,a*d+b*c+1]};},
+()=>{let a=rand(2,7),b=rand(1,9),c=rand(2,7),d=rand(1,9);return {q:'Développer ('+a+'x − '+b+')('+c+'x + '+d+'). Quel est le coefficient de x ?',v:a*d-b*c,wrong:[a*d+b*c,a*c,-b*d]};},
+()=>{let a=rand(2,7),b=rand(1,9),c=rand(2,7),d=rand(1,9);return {q:'Développer ('+a+'x − '+b+')('+c+'x − '+d+'). Quel est le terme constant ?',v:b*d,wrong:[-b*d,a*c,b+d]};},
+()=>{let a=rand(2,6),b=rand(1,9),c=rand(2,6),d=rand(1,9);return {q:'Développer ('+a+'x + '+b+')('+c+'x − '+d+'). Quel est le coefficient de x ?',v:b*c-a*d,wrong:[b*c+a*d,a*c,-b*d]};},
 ()=>{let a=rand(2,9),b=rand(1,9);return {q:'Développer (x + '+a+')(x + '+b+'). Quel est le coefficient de x ?',v:a+b,wrong:[a*b,a+b+1,Math.abs(a-b)]};},
 ()=>{let a=rand(2,9);return {q:'Développer (x + '+a+')². Quel est le terme constant ?',v:a*a,wrong:[2*a,a,a*a+1]};},
 ()=>{let a=rand(2,12);return {q:'Calculer '+root(a*a)+'.',v:a,wrong:[a*a,2*a,a+1]};},
