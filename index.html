@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Automatismes – Seconde</title>
+<style>
+:root{font-family:system-ui,Arial,sans-serif;color:#172338;background:#f5f7fb}*{box-sizing:border-box}body{margin:0;padding:20px}main{max-width:760px;margin:auto}h1{font-size:clamp(1.5rem,5vw,2.1rem)}.panel{background:white;border:1px solid #dbe1e9;border-radius:16px;padding:24px;margin:16px 0;box-shadow:0 3px 12px #1723380a}fieldset{border:0;padding:0;margin:18px 0}legend{font-weight:700;margin-bottom:10px}label{display:inline-flex;align-items:center;gap:7px;margin:7px 18px 7px 0}button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid #bdc9d8;padding:13px 16px;background:#fff;color:#172338}button:focus-visible,input:focus-visible{outline:3px solid #2563eb;outline-offset:2px}.primary{background:#174ea6;color:white;border-color:#174ea6}.answers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.answers button{text-align:center;min-height:62px;font-size:1.12rem}.answers button:disabled{cursor:default}.correct{background:#ddf7e8!important;border-color:#14834b!important}.wrong{background:#ffe6e6!important;border-color:#c33!important}.math{font-family:Georgia,'Times New Roman',serif;font-size:1.35em}.frac{display:inline-flex;vertical-align:middle;flex-direction:column;text-align:center;line-height:1.15;font-size:.92em}.frac span:first-child{border-bottom:1px solid currentColor;padding:0 5px}.frac span:last-child{padding:0 5px}.question{font-size:1.25rem;line-height:1.8}.muted{color:#526174}.hidden{display:none}.feedback{min-height:32px;font-weight:600}.top{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}@media(max-width:480px){body{padding:10px}.panel{padding:16px}.answers{grid-template-columns:1fr}}
+</style></head><body><main><h1>Automatismes de Seconde</h1><p class="muted">Entraîne-toi avec des questions générées aléatoirement.</p>
+<section class="panel" id="setup"><fieldset><legend>Choisis les chapitres</legend><label><input type="checkbox" name="chapter" value="1" checked> 1 · Ensembles et puissances</label><label><input type="checkbox" name="chapter" value="2" checked> 2 · Repérage du plan</label><label><input type="checkbox" name="chapter" value="3" checked> 3 · Calcul littéral et racines</label></fieldset><fieldset><legend>Nombre de questions</legend><label><input type="radio" name="count" value="5" checked> 5 questions</label><label><input type="radio" name="count" value="10"> 10 questions</label></fieldset><p id="error" role="alert"></p><button class="primary" id="start">Commencer</button></section>
+<section class="panel hidden" id="quiz"><div class="top"><strong id="progress"></strong><span id="score"></span></div><div class="question" id="question"></div><div class="answers" id="answers"></div><p class="feedback" id="feedback" aria-live="polite"></p><button class="primary hidden" id="next">Question suivante</button></section>
+<section class="panel hidden" id="end"><h2>Résultat</h2><p id="result"></p><button class="primary" id="restart">Nouvelle série</button></section></main>
+<script>
+'use strict';
+const $=id=>document.getElementById(id),rand=(a,b)=>Math.floor(Math.random()*(b-a+1))+a,choice=a=>a[rand(0,a.length-1)],frac=(a,b)=>'<span class="frac"><span>'+a+'</span><span>'+b+'</span></span>',pow=(a,n)=>a+'<sup>'+n+'</sup>',root=a=>'√'+a,fmt=n=>String(n).replace('.',',');
+const generators={
+1:[
+()=>{let a=rand(2,9),n=rand(2,5);return {q:'Calculer '+pow(a,n)+'.',v:a**n,wrong:[a*n,a**(n-1),a**n+a]};},
+()=>{let a=rand(2,8),m=rand(2,5),n=rand(2,5);return {q:'Simplifier '+pow(a,m)+' × '+pow(a,n)+' (donner l’exposant).',v:m+n,wrong:[m*n,Math.abs(m-n),m+n+1]};},
+()=>{let n=rand(2,8);return {q:'Calculer 10'+ '<sup>−'+n+'</sup> × 10<sup>'+ (n+2)+'</sup>.',v:100,wrong:[10,1000,1]};},
+()=>{let n=rand(1,9);return {q:'Quel est le plus petit ensemble contenant −'+n+' ?',options:['ℕ','ℤ','ℚ','ℝ'],answer:1};}
+],
+2:[
+()=>{let x=rand(-6,6),y=rand(-6,6),u=rand(-6,6),v=rand(-6,6);return {q:'Quelle est l’abscisse du milieu de A('+x+' ; '+y+') et B('+u+' ; '+v+') ?',v:(x+u)/2,wrong:[x+u,(y+v)/2,(x-u)/2]};},
+()=>{let x=rand(-5,5),y=rand(-5,5),d=rand(1,6);return {q:'Quelle est la distance entre A('+x+' ; '+y+') et B('+(x+d)+' ; '+y+') ?',v:d,wrong:[d*d,d+1,2*d]};},
+()=>{let x=rand(-5,5),y=rand(-5,5),u=rand(-5,5),v=rand(-5,5);return {q:'Quelle est l’ordonnée du milieu de A('+x+' ; '+y+') et B('+u+' ; '+v+') ?',v:(y+v)/2,wrong:[y+v,(x+u)/2,(y-v)/2]};}
+],
+3:[
+()=>{let a=rand(2,9),b=rand(1,9);return {q:'Développer (x + '+a+')(x + '+b+'). Quel est le coefficient de x ?',v:a+b,wrong:[a*b,a+b+1,Math.abs(a-b)]};},
+()=>{let a=rand(2,9);return {q:'Développer (x + '+a+')². Quel est le terme constant ?',v:a*a,wrong:[2*a,a,a*a+1]};},
+()=>{let a=rand(2,12);return {q:'Calculer '+root(a*a)+'.',v:a,wrong:[a*a,2*a,a+1]};},
+()=>{let a=rand(2,9),b=rand(2,9);return {q:'Résoudre '+a+'x = '+(a*b)+'.',v:b,wrong:[a*b,a+b,b+1]};},
+()=>{let a=rand(2,9),b=rand(2,9);return {q:'Calculer '+frac(a,b)+' × '+b+'.',v:a,wrong:[a*b,a+b,b]};}
+]};
+let questions=[],index=0,points=0,locked=false;
+function make(ch){const g=choice(generators[ch]),o=g();if(o.options)return {q:o.q,options:o.options,answer:o.answer};
+let values=[o.v,...o.wrong].filter((x,i,a)=>a.indexOf(x)===i);let delta=1;while(values.length<4){let x=o.v+delta++;if(!values.includes(x))values.push(x)}values=values.slice(0,4);for(let i=values.length-1;i>0;i--){let j=rand(0,i);[values[i],values[j]]=[values[j],values[i]]}return {q:o.q,options:values.map(fmt),answer:values.indexOf(o.v)}}
+function show(id){['setup','quiz','end'].forEach(x=>$(x).classList.toggle('hidden',x!==id))}
+function display(){locked=false;const o=questions[index];$('progress').textContent='Question '+(index+1)+' / '+questions.length;$('score').textContent='Score : '+points;$('question').innerHTML='<p>'+o.q+'</p>';$('feedback').textContent='';$('next').classList.add('hidden');$('answers').replaceChildren();o.options.forEach((s,i)=>{const b=document.createElement('button');b.innerHTML=s;b.addEventListener('click',()=>answer(i));$('answers').append(b)})}
+function answer(i){if(locked)return;locked=true;const o=questions[index];if(i===o.answer)points++;[...$('answers').children].forEach((b,j)=>{b.disabled=true;if(j===o.answer)b.classList.add('correct');else if(j===i)b.classList.add('wrong')});$('feedback').textContent=i===o.answer?'Bonne réponse !':'La bonne réponse est : '+o.options[o.answer].replace(/<[^>]*>/g,'');$('score').textContent='Score : '+points;$('next').textContent=index===questions.length-1?'Voir mon résultat':'Question suivante';$('next').classList.remove('hidden')}
+$('start').addEventListener('click',()=>{const chapters=[...document.querySelectorAll('input[name=chapter]:checked')].map(e=>e.value);if(!chapters.length){$('error').textContent='Sélectionne au moins un chapitre.';return}$('error').textContent='';const count=Number(document.querySelector('input[name=count]:checked').value);questions=Array.from({length:count},()=>make(choice(chapters)));index=0;points=0;show('quiz');display()});
+$('next').addEventListener('click',()=>{index++;if(index===questions.length){show('end');$('result').textContent=points+' / '+questions.length+' bonnes réponses ('+Math.round(100*points/questions.length)+' %).'}else display()});
+$('restart').addEventListener('click',()=>show('setup'));
+</script></body></html>
