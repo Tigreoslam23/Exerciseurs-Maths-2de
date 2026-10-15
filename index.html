@@ -10,21 +10,22 @@
 <script>
 'use strict';
 const $=id=>document.getElementById(id),rand=(a,b)=>Math.floor(Math.random()*(b-a+1))+a,choice=a=>a[rand(0,a.length-1)],frac=(a,b)=>'<span class="frac"><span>'+a+'</span><span>'+b+'</span></span>',pow=(a,n)=>a+'<sup>'+n+'</sup>',root=a=>'√'+a,fmt=n=>String(n).replace('.',',');
+const powerAnswer=(a,v,wrong,q)=>({q,v,wrong,format:x=>pow(a,x)});
 const generators={
 1:[
-()=>{let a=rand(2,7),m=rand(2,7),n=rand(1,6);return {q:'Quel est l’exposant final de '+pow(a,m)+' × '+pow(a,n)+' ?',v:m+n,wrong:[m*n,m-n,m+n+1]};},
-()=>{let a=rand(2,7),m=rand(5,10),n=rand(1,4);return {q:'Quel est l’exposant final de '+frac(pow(a,m),pow(a,n))+' ?',v:m-n,wrong:[m+n,m*n,n-m]};},
-()=>{let a=rand(2,7),m=rand(2,5),n=rand(2,4);return {q:'Quel est l’exposant final de ('+pow(a,m)+')<sup>'+n+'</sup> ?',v:m*n,wrong:[m+n,m*n+1,m**n]};},
+()=>{let a=rand(2,7),m=rand(2,7),n=rand(1,6);return {format:x=>pow(a,x),q:'Quel est l’exposant final de '+pow(a,m)+' × '+pow(a,n)+' ?',v:m+n,wrong:[m*n,m-n,m+n+1]};},
+()=>{let a=rand(2,7),m=rand(5,10),n=rand(1,4);return {format:x=>pow(a,x),q:'Quel est l’exposant final de '+frac(pow(a,m),pow(a,n))+' ?',v:m-n,wrong:[m+n,m*n,n-m]};},
+()=>{let a=rand(2,7),m=rand(2,5),n=rand(2,4);return {format:x=>pow(a,x),q:'Quel est l’exposant final de ('+pow(a,m)+')<sup>'+n+'</sup> ?',v:m*n,wrong:[m+n,m*n+1,m**n]};},
 ()=>{let a=rand(2,5),b=rand(2,6),n=rand(2,5);return {q:'Dans ('+a+' × '+b+')<sup>'+n+'</sup> = '+pow(a,n)+' × '+pow(b,n)+', quel est l’exposant de chaque facteur ?',v:n,wrong:[2*n,n+1,n*n]};},
 ()=>{let a=rand(2,7),b=rand(2,7),n=rand(2,6);return {q:'Dans ('+frac(a,b)+')<sup>'+n+'</sup> = '+frac(pow(a,n),pow(b,n))+', quel est l’exposant de chaque terme ?',v:n,wrong:[2*n,n+1,n*n]};},
-()=>{let a=rand(2,9),n=rand(2,6);return {q:'Quel est l’exposant final de '+frac('1',pow(a,n))+' écrit comme une puissance de '+a+' ?',v:-n,wrong:[n,0,-n-1]};},
+()=>{let a=rand(2,9),n=rand(2,6);return {format:x=>pow(a,x),q:'Quel est l’exposant final de '+frac('1',pow(a,n))+' écrit comme une puissance de '+a+' ?',v:-n,wrong:[n,0,-n-1]};},
 ()=>{let a=rand(2,9),n=rand(2,7);return {q:'Calculer '+pow(a,0)+'.',v:1,wrong:[0,a,a*a]};},
 ()=>{let a=rand(2,9),n=rand(2,6);return {q:'Quel est le signe de (−'+a+')<sup>'+n+'</sup> ?',options:['Positif','Négatif','Nul','Impossible à déterminer'],answer:n%2===0?0:1};},
-()=>{let a=rand(2,7),m=rand(2,5),n=rand(2,4),p=rand(1,6);return {q:'Quel est l’exposant final de '+frac('('+pow(a,m)+')<sup>'+n+'</sup> × '+pow(a,p),pow(a,rand(1,1))+'')+' ?',v:m*n+p-1,wrong:[m+n+p-1,m*n-p-1,m*n+p+1]};},
-()=>{let a=rand(2,7),m=rand(2,5),n=rand(2,4),p=rand(1,5),q=rand(1,4);return {q:'Quel est l’exposant final de '+frac('('+pow(a,m)+')<sup>'+n+'</sup> × '+pow(a,p),pow(a,q))+' ?',v:m*n+p-q,wrong:[m+n+p-q,m*n-p-q,m*n+p+q]};},
-()=>{let a=rand(2,9),n=rand(2,5);return {q:'Calculer '+pow(a,n)+'.',v:a**n,wrong:[a*n,a**(n-1),a**n+a]};},
-()=>{let a=rand(2,8),m=rand(2,5),n=rand(2,5);return {q:'Simplifier '+pow(a,m)+' × '+pow(a,n)+' (donner l’exposant).',v:m+n,wrong:[m*n,Math.abs(m-n),m+n+1]};},
-()=>{let n=rand(2,8);return {q:'Calculer 10'+ '<sup>−'+n+'</sup> × 10<sup>'+ (n+2)+'</sup>.',v:100,wrong:[10,1000,1]};},
+()=>{let a=rand(2,7),m=rand(2,5),n=rand(2,4),p=rand(1,6);return {format:x=>pow(a,x),q:'Quel est l’exposant final de '+frac('('+pow(a,m)+')<sup>'+n+'</sup> × '+pow(a,p),pow(a,rand(1,1))+'')+' ?',v:m*n+p-1,wrong:[m+n+p-1,m*n-p-1,m*n+p+1]};},
+()=>{let a=rand(2,7),m=rand(2,5),n=rand(2,4),p=rand(1,5),q=rand(1,4);return {format:x=>pow(a,x),q:'Quel est l’exposant final de '+frac('('+pow(a,m)+')<sup>'+n+'</sup> × '+pow(a,p),pow(a,q))+' ?',v:m*n+p-q,wrong:[m+n+p-q,m*n-p-q,m*n+p+q]};},
+()=>{let a=rand(2,9),n=rand(2,5);return {format:x=>x===a**n?pow(a,n):fmt(x),q:'Calculer '+pow(a,n)+'.',v:a**n,wrong:[a*n,a**(n-1),a**n+a]};},
+()=>{let a=rand(2,8),m=rand(2,5),n=rand(2,5);return {format:x=>pow(a,x),q:'Simplifier '+pow(a,m)+' × '+pow(a,n)+' .',v:m+n,wrong:[m*n,Math.abs(m-n),m+n+1]};},
+()=>{let n=rand(2,8);return {format:x=>pow(10,Math.round(Math.log10(x))),q:'Calculer 10'+ '<sup>−'+n+'</sup> × 10<sup>'+ (n+2)+'</sup>.',v:100,wrong:[10,1000,1]};},
 ()=>{let n=rand(1,9);return {q:'Quel est le plus petit ensemble contenant −'+n+' ?',options:['ℕ','ℤ','ℚ','ℝ'],answer:1};}
 ],
 2:[
@@ -48,7 +49,7 @@ const generators={
 ]};
 let questions=[],index=0,points=0,locked=false;
 function make(ch){const g=choice(generators[ch]),o=g();if(o.options)return {q:o.q,options:o.options,answer:o.answer};
-let values=[o.v,...o.wrong].filter((x,i,a)=>a.indexOf(x)===i);let delta=1;while(values.length<4){let x=o.v+delta++;if(!values.includes(x))values.push(x)}values=values.slice(0,4);for(let i=values.length-1;i>0;i--){let j=rand(0,i);[values[i],values[j]]=[values[j],values[i]]}return {q:o.q,options:values.map(fmt),answer:values.indexOf(o.v)}}
+let values=[o.v,...o.wrong].filter((x,i,a)=>a.indexOf(x)===i);let delta=1;while(values.length<4){let x=o.v+delta++;if(!values.includes(x))values.push(x)}values=values.slice(0,4);for(let i=values.length-1;i>0;i--){let j=rand(0,i);[values[i],values[j]]=[values[j],values[i]]}return {q:o.q,options:values.map(o.format||fmt),answer:values.indexOf(o.v)}}
 function show(id){['setup','quiz','end'].forEach(x=>$(x).classList.toggle('hidden',x!==id))}
 function display(){locked=false;const o=questions[index];$('progress').textContent='Question '+(index+1)+' / '+questions.length;$('score').textContent='Score : '+points;$('question').innerHTML='<p>'+o.q+'</p>';$('feedback').textContent='';$('next').classList.add('hidden');$('answers').replaceChildren();o.options.forEach((s,i)=>{const b=document.createElement('button');b.innerHTML=s;b.addEventListener('click',()=>answer(i));$('answers').append(b)})}
 function answer(i){if(locked)return;locked=true;const o=questions[index];if(i===o.answer)points++;[...$('answers').children].forEach((b,j)=>{b.disabled=true;if(j===o.answer)b.classList.add('correct');else if(j===i)b.classList.add('wrong')});$('feedback').textContent=i===o.answer?'Bonne réponse !':'La bonne réponse est : '+o.options[o.answer].replace(/<[^>]*>/g,'');$('score').textContent='Score : '+points;$('next').textContent=index===questions.length-1?'Voir mon résultat':'Question suivante';$('next').classList.remove('hidden')}
