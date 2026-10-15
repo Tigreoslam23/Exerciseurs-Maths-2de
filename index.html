@@ -12,6 +12,16 @@
 const $=id=>document.getElementById(id),rand=(a,b)=>Math.floor(Math.random()*(b-a+1))+a,choice=a=>a[rand(0,a.length-1)],frac=(a,b)=>'<span class="frac"><span>'+a+'</span><span>'+b+'</span></span>',pow=(a,n)=>a+'<sup>'+n+'</sup>',root=a=>'√'+a,fmt=n=>String(n).replace('.',',');
 const generators={
 1:[
+()=>{let a=rand(2,7),m=rand(2,7),n=rand(1,6);return {q:'Quel est l’exposant final de '+pow(a,m)+' × '+pow(a,n)+' ?',v:m+n,wrong:[m*n,m-n,m+n+1]};},
+()=>{let a=rand(2,7),m=rand(5,10),n=rand(1,4);return {q:'Quel est l’exposant final de '+frac(pow(a,m),pow(a,n))+' ?',v:m-n,wrong:[m+n,m*n,n-m]};},
+()=>{let a=rand(2,7),m=rand(2,5),n=rand(2,4);return {q:'Quel est l’exposant final de ('+pow(a,m)+')<sup>'+n+'</sup> ?',v:m*n,wrong:[m+n,m*n+1,m**n]};},
+()=>{let a=rand(2,5),b=rand(2,6),n=rand(2,5);return {q:'Dans ('+a+' × '+b+')<sup>'+n+'</sup> = '+pow(a,n)+' × '+pow(b,n)+', quel est l’exposant de chaque facteur ?',v:n,wrong:[2*n,n+1,n*n]};},
+()=>{let a=rand(2,7),b=rand(2,7),n=rand(2,6);return {q:'Dans ('+frac(a,b)+')<sup>'+n+'</sup> = '+frac(pow(a,n),pow(b,n))+', quel est l’exposant de chaque terme ?',v:n,wrong:[2*n,n+1,n*n]};},
+()=>{let a=rand(2,9),n=rand(2,6);return {q:'Quel est l’exposant final de '+frac('1',pow(a,n))+' écrit comme une puissance de '+a+' ?',v:-n,wrong:[n,0,-n-1]};},
+()=>{let a=rand(2,9),n=rand(2,7);return {q:'Calculer '+pow(a,0)+'.',v:1,wrong:[0,a,a*a]};},
+()=>{let a=rand(2,9),n=rand(2,6);return {q:'Quel est le signe de (−'+a+')<sup>'+n+'</sup> ?',options:['Positif','Négatif','Nul','Impossible à déterminer'],answer:n%2===0?0:1};},
+()=>{let a=rand(2,7),m=rand(2,5),n=rand(2,4),p=rand(1,6);return {q:'Quel est l’exposant final de '+frac('('+pow(a,m)+')<sup>'+n+'</sup> × '+pow(a,p),pow(a,rand(1,1))+'')+' ?',v:m*n+p-1,wrong:[m+n+p-1,m*n-p-1,m*n+p+1]};},
+()=>{let a=rand(2,7),m=rand(2,5),n=rand(2,4),p=rand(1,5),q=rand(1,4);return {q:'Quel est l’exposant final de '+frac('('+pow(a,m)+')<sup>'+n+'</sup> × '+pow(a,p),pow(a,q))+' ?',v:m*n+p-q,wrong:[m+n+p-q,m*n-p-q,m*n+p+q]};},
 ()=>{let a=rand(2,9),n=rand(2,5);return {q:'Calculer '+pow(a,n)+'.',v:a**n,wrong:[a*n,a**(n-1),a**n+a]};},
 ()=>{let a=rand(2,8),m=rand(2,5),n=rand(2,5);return {q:'Simplifier '+pow(a,m)+' × '+pow(a,n)+' (donner l’exposant).',v:m+n,wrong:[m*n,Math.abs(m-n),m+n+1]};},
 ()=>{let n=rand(2,8);return {q:'Calculer 10'+ '<sup>−'+n+'</sup> × 10<sup>'+ (n+2)+'</sup>.',v:100,wrong:[10,1000,1]};},
