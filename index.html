@@ -1,59 +1,1056 @@
-<!doctype html>
-<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Automatismes – Seconde</title>
-<style>
-:root{font-family:system-ui,Arial,sans-serif;color:#172338;background:#f5f7fb}*{box-sizing:border-box}body{margin:0;padding:20px}main{max-width:760px;margin:auto}h1{font-size:clamp(1.5rem,5vw,2.1rem)}.panel{background:white;border:1px solid #dbe1e9;border-radius:16px;padding:24px;margin:16px 0;box-shadow:0 3px 12px #1723380a}fieldset{border:0;padding:0;margin:18px 0}legend{font-weight:700;margin-bottom:10px}label{display:inline-flex;align-items:center;gap:7px;margin:7px 18px 7px 0}button{font:inherit;cursor:pointer;border-radius:10px;border:1px solid #bdc9d8;padding:13px 16px;background:#fff;color:#172338}button:focus-visible,input:focus-visible{outline:3px solid #2563eb;outline-offset:2px}.primary{background:#174ea6;color:white;border-color:#174ea6}.answers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.answers button{text-align:center;min-height:62px;font-size:1.12rem}.answers button:disabled{cursor:default}.correct{background:#ddf7e8!important;border-color:#14834b!important}.wrong{background:#ffe6e6!important;border-color:#c33!important}.math{font-family:Georgia,'Times New Roman',serif;font-size:1.35em}.frac{display:inline-flex;vertical-align:middle;flex-direction:column;text-align:center;line-height:1.15;font-size:.92em}.frac span:first-child{border-bottom:1px solid currentColor;padding:0 5px}.frac span:last-child{padding:0 5px}.question{font-size:1.25rem;line-height:1.8}.muted{color:#526174}.hidden{display:none}.feedback{min-height:32px;font-weight:600}.top{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}@media(max-width:480px){body{padding:10px}.panel{padding:16px}.answers{grid-template-columns:1fr}}
-</style></head><body><main><h1>Automatismes de Seconde</h1><p class="muted">Entraîne-toi avec des questions générées aléatoirement.</p>
-<section class="panel" id="setup"><fieldset><legend>Choisis les chapitres</legend><label><input type="checkbox" name="chapter" value="1" checked> 1 · Ensembles et puissances</label><label><input type="checkbox" name="chapter" value="2" checked> 2 · Repérage du plan</label><label><input type="checkbox" name="chapter" value="3" checked> 3 · Calcul littéral et racines</label></fieldset><fieldset><legend>Nombre de questions</legend><label><input type="radio" name="count" value="5" checked> 5 questions</label><label><input type="radio" name="count" value="10"> 10 questions</label></fieldset><p id="error" role="alert"></p><button class="primary" id="start">Commencer</button></section>
-<section class="panel hidden" id="quiz"><div class="top"><strong id="progress"></strong><span id="score"></span></div><div class="question" id="question"></div><div class="answers" id="answers"></div><p class="feedback" id="feedback" aria-live="polite"></p><button class="primary hidden" id="next">Question suivante</button></section>
-<section class="panel hidden" id="end"><h2>Résultat</h2><p id="result"></p><button class="primary" id="restart">Nouvelle série</button></section></main>
-<script>
-'use strict';
-const $=id=>document.getElementById(id),rand=(a,b)=>Math.floor(Math.random()*(b-a+1))+a,choice=a=>a[rand(0,a.length-1)],frac=(a,b)=>'<span class="frac"><span>'+a+'</span><span>'+b+'</span></span>',pow=(a,n)=>a+'<sup>'+n+'</sup>',root=a=>'√'+a,fmt=n=>String(n).replace('.',',');
-const powerAnswer=(a,v,wrong,q)=>({q,v,wrong,format:x=>pow(a,x)});
-const generators={
-1:[
-()=>{let a=rand(2,7),m=rand(2,7),n=rand(1,6);return {format:x=>pow(a,x),q:'Quel est l’exposant final de '+pow(a,m)+' × '+pow(a,n)+' ?',v:m+n,wrong:[m*n,m-n,m+n+1]};},
-()=>{let a=rand(2,7),m=rand(5,10),n=rand(1,4);return {format:x=>pow(a,x),q:'Quel est l’exposant final de '+frac(pow(a,m),pow(a,n))+' ?',v:m-n,wrong:[m+n,m*n,n-m]};},
-()=>{let a=rand(2,7),m=rand(2,5),n=rand(2,4);return {format:x=>pow(a,x),q:'Quel est l’exposant final de ('+pow(a,m)+')<sup>'+n+'</sup> ?',v:m*n,wrong:[m+n,m*n+1,m**n]};},
-()=>{let a=rand(2,5),b=rand(2,6),n=rand(2,5);return {q:'Dans ('+a+' × '+b+')<sup>'+n+'</sup> = '+pow(a,n)+' × '+pow(b,n)+', quel est l’exposant de chaque facteur ?',v:n,wrong:[2*n,n+1,n*n]};},
-()=>{let a=rand(2,7),b=rand(2,7),n=rand(2,6);return {q:'Dans ('+frac(a,b)+')<sup>'+n+'</sup> = '+frac(pow(a,n),pow(b,n))+', quel est l’exposant de chaque terme ?',v:n,wrong:[2*n,n+1,n*n]};},
-()=>{let a=rand(2,9),n=rand(2,6);return {format:x=>pow(a,x),q:'Quel est l’exposant final de '+frac('1',pow(a,n))+' écrit comme une puissance de '+a+' ?',v:-n,wrong:[n,0,-n-1]};},
-()=>{let a=rand(2,9),n=rand(2,7);return {q:'Calculer '+pow(a,0)+'.',v:1,wrong:[0,a,a*a]};},
-()=>{let a=rand(2,9),n=rand(2,6);return {q:'Quel est le signe de (−'+a+')<sup>'+n+'</sup> ?',options:['Positif','Négatif','Nul','Impossible à déterminer'],answer:n%2===0?0:1};},
-()=>{let a=rand(2,7),m=rand(2,5),n=rand(2,4),p=rand(1,6);return {format:x=>pow(a,x),q:'Quel est l’exposant final de '+frac('('+pow(a,m)+')<sup>'+n+'</sup> × '+pow(a,p),pow(a,rand(1,1))+'')+' ?',v:m*n+p-1,wrong:[m+n+p-1,m*n-p-1,m*n+p+1]};},
-()=>{let a=rand(2,7),m=rand(2,5),n=rand(2,4),p=rand(1,5),q=rand(1,4);return {format:x=>pow(a,x),q:'Quel est l’exposant final de '+frac('('+pow(a,m)+')<sup>'+n+'</sup> × '+pow(a,p),pow(a,q))+' ?',v:m*n+p-q,wrong:[m+n+p-q,m*n-p-q,m*n+p+q]};},
-()=>{let a=rand(2,9),n=rand(2,5);return {format:x=>x===a**n?pow(a,n):fmt(x),q:'Calculer '+pow(a,n)+'.',v:a**n,wrong:[a*n,a**(n-1),a**n+a]};},
-()=>{let a=rand(2,8),m=rand(2,5),n=rand(2,5);return {format:x=>pow(a,x),q:'Simplifier '+pow(a,m)+' × '+pow(a,n)+' .',v:m+n,wrong:[m*n,Math.abs(m-n),m+n+1]};},
-()=>{let n=rand(2,8);return {format:x=>pow(10,Math.round(Math.log10(x))),q:'Calculer 10'+ '<sup>−'+n+'</sup> × 10<sup>'+ (n+2)+'</sup>.',v:100,wrong:[10,1000,1]};},
-()=>{let n=rand(1,9);return {q:'Quel est le plus petit ensemble contenant −'+n+' ?',options:['ℕ','ℤ','ℚ','ℝ'],answer:1};}
-],
-2:[
-()=>{let x=rand(-6,6),y=rand(-6,6),u=rand(-6,6),v=rand(-6,6);return {q:'Quelle est l’abscisse du milieu de A('+x+' ; '+y+') et B('+u+' ; '+v+') ?',v:(x+u)/2,wrong:[x+u,(y+v)/2,(x-u)/2]};},
-()=>{let x=rand(-5,5),y=rand(-5,5),d=rand(1,6);return {q:'Quelle est la distance entre A('+x+' ; '+y+') et B('+(x+d)+' ; '+y+') ?',v:d,wrong:[d*d,d+1,2*d]};},
-()=>{let x=rand(-5,5),y=rand(-5,5),u=rand(-5,5),v=rand(-5,5);return {q:'Quelle est l’ordonnée du milieu de A('+x+' ; '+y+') et B('+u+' ; '+v+') ?',v:(y+v)/2,wrong:[y+v,(x+u)/2,(y-v)/2]};}
-],
-3:[
-()=>{const a=rand(1,5),b=rand(1,8)*choice([-1,1]),c=rand(1,5),d=rand(1,8)*choice([-1,1]);const expr=(u,v)=>'('+u+'x '+(v<0?'− ':'+ ')+Math.abs(v)+')';const poly=(p,q,r)=>p+'x² '+(q<0?'− ':'+ ')+Math.abs(q)+'x '+(r<0?'− ':'+ ')+Math.abs(r);const A=a*c,B=a*d+b*c,C=b*d;const options=[poly(A,B,C),poly(A,a*d-b*c,C),poly(A,B,-C),poly(A,B+choice([-1,1])*rand(1,4),C)];for(let i=options.length-1;i>0;i--){const j=rand(0,i);[options[i],options[j]]=[options[j],options[i]]}return {q:'Quelle est la forme développée et réduite de '+expr(a,b)+expr(c,d)+' ?',options,answer:options.indexOf(poly(A,B,C))};},
-()=>{const a=rand(1,5),b=rand(1,8)*choice([-1,1]),c=rand(1,5),d=rand(1,8)*choice([-1,1]);const expr=(u,v)=>'('+u+'x '+(v<0?'− ':'+ ')+Math.abs(v)+')';const poly=(p,q,r)=>p+'x² '+(q<0?'− ':'+ ')+Math.abs(q)+'x '+(r<0?'− ':'+ ')+Math.abs(r);const A=a*c,B=a*d+b*c,C=b*d;const options=[poly(A,B,C),poly(a+c,B,C),poly(A,a*d-b*c,C),poly(A,B,-C)];for(let i=options.length-1;i>0;i--){const j=rand(0,i);[options[i],options[j]]=[options[j],options[i]]}return {q:'Choisir le bon développement de '+expr(a,b)+expr(c,d)+'.',options,answer:options.indexOf(poly(A,B,C))};},
-()=>{let a=rand(2,6),b=rand(1,9),c=rand(2,6),d=rand(1,9);return {q:'Développer ('+a+'x + '+b+')('+c+'x + '+d+'). Quel est le coefficient de x² ?',v:a*c,wrong:[a+c,a*d+b*c,b*d]};},
-()=>{let a=rand(2,6),b=rand(1,9),c=rand(2,6),d=rand(1,9);return {q:'Développer ('+a+'x + '+b+')('+c+'x + '+d+'). Quel est le coefficient de x ?',v:a*d+b*c,wrong:[a*c,b*d,a*d+b*c+1]};},
-()=>{let a=rand(2,7),b=rand(1,9),c=rand(2,7),d=rand(1,9);return {q:'Développer ('+a+'x − '+b+')('+c+'x + '+d+'). Quel est le coefficient de x ?',v:a*d-b*c,wrong:[a*d+b*c,a*c,-b*d]};},
-()=>{let a=rand(2,7),b=rand(1,9),c=rand(2,7),d=rand(1,9);return {q:'Développer ('+a+'x − '+b+')('+c+'x − '+d+'). Quel est le terme constant ?',v:b*d,wrong:[-b*d,a*c,b+d]};},
-()=>{let a=rand(2,6),b=rand(1,9),c=rand(2,6),d=rand(1,9);return {q:'Développer ('+a+'x + '+b+')('+c+'x − '+d+'). Quel est le coefficient de x ?',v:b*c-a*d,wrong:[b*c+a*d,a*c,-b*d]};},
-()=>{let a=rand(2,9),b=rand(1,9);return {q:'Développer (x + '+a+')(x + '+b+'). Quel est le coefficient de x ?',v:a+b,wrong:[a*b,a+b+1,Math.abs(a-b)]};},
-()=>{let a=rand(2,9);return {q:'Développer (x + '+a+')². Quel est le terme constant ?',v:a*a,wrong:[2*a,a,a*a+1]};},
-()=>{let a=rand(2,12);return {q:'Calculer '+root(a*a)+'.',v:a,wrong:[a*a,2*a,a+1]};},
-()=>{let a=rand(2,9),b=rand(2,9);return {q:'Résoudre '+a+'x = '+(a*b)+'.',v:b,wrong:[a*b,a+b,b+1]};},
-()=>{let a=rand(2,9),b=rand(2,9);return {q:'Calculer '+frac(a,b)+' × '+b+'.',v:a,wrong:[a*b,a+b,b]};}
-]};
-let questions=[],index=0,points=0,locked=false;
-function make(ch){const g=choice(generators[ch]),o=g();if(o.options)return {q:o.q,options:o.options,answer:o.answer};
-let values=[o.v,...o.wrong].filter((x,i,a)=>a.indexOf(x)===i);let delta=1;while(values.length<4){let x=o.v+delta++;if(!values.includes(x))values.push(x)}values=values.slice(0,4);for(let i=values.length-1;i>0;i--){let j=rand(0,i);[values[i],values[j]]=[values[j],values[i]]}return {q:o.q,options:values.map(o.format||fmt),answer:values.indexOf(o.v)}}
-function show(id){['setup','quiz','end'].forEach(x=>$(x).classList.toggle('hidden',x!==id))}
-function display(){locked=false;const o=questions[index];$('progress').textContent='Question '+(index+1)+' / '+questions.length;$('score').textContent='Score : '+points;$('question').innerHTML='<p>'+o.q+'</p>';$('feedback').textContent='';$('next').classList.add('hidden');$('answers').replaceChildren();o.options.forEach((s,i)=>{const b=document.createElement('button');b.innerHTML=s;b.addEventListener('click',()=>answer(i));$('answers').append(b)})}
-function answer(i){if(locked)return;locked=true;const o=questions[index];if(i===o.answer)points++;[...$('answers').children].forEach((b,j)=>{b.disabled=true;if(j===o.answer)b.classList.add('correct');else if(j===i)b.classList.add('wrong')});$('feedback').textContent=i===o.answer?'Bonne réponse !':'La bonne réponse est : '+o.options[o.answer].replace(/<[^>]*>/g,'');$('score').textContent='Score : '+points;$('next').textContent=index===questions.length-1?'Voir mon résultat':'Question suivante';$('next').classList.remove('hidden')}
-$('start').addEventListener('click',()=>{const chapters=[...document.querySelectorAll('input[name=chapter]:checked')].map(e=>e.value);if(!chapters.length){$('error').textContent='Sélectionne au moins un chapitre.';return}$('error').textContent='';const count=Number(document.querySelector('input[name=count]:checked').value);questions=Array.from({length:count},()=>make(choice(chapters)));index=0;points=0;show('quiz');display()});
-$('next').addEventListener('click',()=>{index++;if(index===questions.length){show('end');$('result').textContent=points+' / '+questions.length+' bonnes réponses ('+Math.round(100*points/questions.length)+' %).'}else display()});
-$('restart').addEventListener('click',()=>show('setup'));
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>AutoMaths – Seconde</title><meta name="theme-color" content="#007d89"><link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2048%2048%22%3E%3Cpath%20fill%3D%22%23007d89%22%20fill-rule%3D%22evenodd%22%20d%3D%22M24%203%2046%2042H34l-4-7H18l-4%207H2L24%203Zm0%2015-6%2011h12Z%22%2F%3E%3Cpath%20fill%3D%22%2321bfb2%22%20d%3D%22m2%2042%2016-28%206%2010-10%2018Z%22%2F%3E%3Ccircle%20cx%3D%2241%22%20cy%3D%228%22%20r%3D%224%22%20fill%3D%22%23f4c64d%22%2F%3E%3C%2Fsvg%3E"><script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" defer></script><style>:root{font-family:system-ui,sans-serif;color:#172033;background:#f5f7fb}*{box-sizing:border-box}main{max-width:790px;margin:25px auto;padding:20px}section{background:white;border-radius:16px;padding:24px;box-shadow:0 3px 16px #14213d12;margin-bottom:16px}h1{margin:0 0 6px}h2{font-size:1.2rem}label{display:block;margin:10px 0}.options{display:grid;grid-template-columns:1fr 1fr;gap:10px}.option{display:block!important;visibility:visible!important;opacity:1;color:#172033;border:2px solid #94a3b8;background:#f8fafc;border-radius:12px;padding:14px;text-align:left;min-height:60px;font-size:1.05rem;cursor:pointer}.option:disabled{cursor:default}.good{border:2px solid #16803a;background:#ecfdf3}.bad{border:2px solid #be123c;background:#fff1f2}button.primary{background:#1e3a8a;color:white;border:0;padding:13px 20px;border-radius:10px;cursor:pointer;font-size:1rem}button:disabled{opacity:.6}small,.muted{color:#64748b}.hidden{display:none}.meta{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}.feedback{padding:12px 0;font-weight:600}@media(max-width:520px){main{margin:0;padding:10px}section{padding:16px}.options{grid-template-columns:1fr}}.count-wrap{margin:18px 0}.count-title{font-weight:600;margin-bottom:10px}.count-buttons{display:flex;gap:10px;flex-wrap:wrap}.count-btn{border:2px solid #94a3b8;background:#fff;color:#172033;padding:12px 18px;border-radius:12px;font-size:1rem;font-weight:600;cursor:pointer;min-width:140px}.count-btn.active{background:#1e3a8a;color:#fff;border-color:#1e3a8a}.count-btn:focus-visible{outline:3px solid #60a5fa;outline-offset:2px}
+/* Module fiches imprimables */
+.mode-title{margin:18px 0 9px;font-weight:700}.mode-row{display:flex;flex-wrap:wrap;gap:10px}
+.mode-btn{border:2px solid #94a3b8;background:#fff;color:#172033;padding:11px 15px;border-radius:11px;font-size:1rem;cursor:pointer;font-weight:650;flex:1;min-width:165px}
+.mode-btn.active{border-color:#1e3a8a;background:#1e3a8a;color:#fff}
+.mode-btn:focus-visible,.toolbar button:focus-visible{outline:3px solid #60a5fa;outline-offset:2px}
+#paperOptions{margin-top:12px;padding:13px;background:#f7f9fc;border:1px solid #e2e8f0;border-radius:12px}
+#paperOptions input[type=text]{display:block;width:100%;font:inherit;border:1px solid #94a3b8;border-radius:9px;padding:9px;background:white}
+#paperOptions label{margin:8px 0}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.toolbar button{border:1px solid #94a3b8;background:white;color:#172033;padding:10px 13px;border-radius:10px;font:inherit;cursor:pointer}
+.toolbar button.primary{background:#1e3a8a;color:white;border:0}.toolbar button.active{background:#dbeafe;border-color:#1e3a8a}
+.help{font-size:.9rem;color:#475569}.sheet-window{background:#e8ecf4;padding:18px;border-radius:12px;overflow-x:auto}
+.a4-sheet{background:white;color:black;max-width:740px;min-width:0;margin:auto;padding:29px 35px;box-shadow:0 2px 10px #33415520;font-family:Georgia,'Times New Roman',serif;font-size:11pt;line-height:1.37}
+.sheet-heading{border-bottom:1px solid #111;padding-bottom:9px;margin-bottom:17px;display:flex;justify-content:space-between;gap:6px;align-items:flex-end}
+.sheet-heading h2{margin:0;font-family:inherit;font-size:16pt}.sheet-sub{font-size:9pt;color:#444}.sheet-name{margin-top:12px;font-size:10pt}
+.sheet-columns{columns:2;column-gap:27px;column-rule:1px solid #d4d4d4}.sheet-question{break-inside:avoid;page-break-inside:avoid;margin:0 0 14px}
+.sheet-question .id{font:9px system-ui,sans-serif;color:#777}.sheet-question .ans{margin-top:7px;border-bottom:1px dotted #aaa;height:20px}
+.sheet-correction{font-size:9.7pt;margin-top:6px}.sheet-correction .answer{font-weight:700}.sheet-correction .method{margin-top:4px;color:#262626}
+#paperStatus{min-height:1.2em;color:#334155;font-size:.9rem}
+#printDocument{display:none}
+@page{size:A4;margin:2.5cm}
+@media print{
+  html,body{background:white!important;color:black!important;margin:0!important;padding:0!important}
+  body>main{display:none!important}#printDocument{display:block!important}
+  .a4-sheet{font-size:10pt;max-width:none;width:auto;margin:0!important;padding:0!important;box-shadow:none!important}
+  .sheet-columns{columns:2!important;column-gap:10mm;column-rule:0!important;}
+  .sheet-heading h2{font-size:15pt}.sheet-question{margin-bottom:10mm}.sheet-question .ans{height:8mm}
+  .sheet-correction{font-size:9.3pt}
+}
+@media(max-width:540px){.sheet-window{padding:9px}.a4-sheet{padding:14px;font-size:9.3pt}.sheet-columns{columns:1}.sheet-heading h2{font-size:12pt}}
+
+.plain-btn,.skill-practice{font:inherit;border:1px solid #94a3b8;background:#fff;color:#172033;border-radius:10px;padding:9px 12px;cursor:pointer}
+button:focus-visible,summary:focus-visible{outline:3px solid #60a5fa;outline-offset:3px}
+.skills-summary{font-weight:650;line-height:1.7}.chapter-card{border:1px solid #dbe2ed;border-radius:14px;margin:14px 0;overflow:hidden}
+.chapter-card>summary{cursor:pointer;padding:16px;background:#f8fafc;font-weight:700;line-height:1.5}
+.chapter-body{padding:0 16px 8px}.chapter-average{font-size:.88rem;font-weight:400;color:#526174;display:block}
+.skill-card{padding:16px 0;border-top:1px solid #e2e8f0}.skill-heading{display:flex;align-items:start;justify-content:space-between;gap:12px}
+.skill-name{font-weight:650;font-size:.97rem}.skill-value{font-weight:750;white-space:nowrap}
+.skill-bar{height:12px;background:#e5eaf1;border-radius:999px;overflow:hidden;margin:10px 0 7px}
+.skill-fill{height:100%;border-radius:999px;background:var(--skill-color);transition:width .25s ease}
+.skill-meta{display:flex;align-items:center;justify-content:space-between;gap:12px}.skill-meta small{line-height:1.5}
+.skill-practice{font-size:.85rem;padding:7px 10px;white-space:nowrap}.chapter-body>.toolbar{margin:12px 0}
+@media(max-width:520px){.skill-meta{align-items:flex-start;flex-direction:column}.chapter-body{padding:0 12px 8px}.chapter-card>summary{padding:12px}}
+
+/* Thème Lagon : styles écran, impression conservée en noir et blanc. */
+@media screen {
+ :root{--ink:#143546;--muted:#537482;--teal:#007d89;--line:#d8eae9;--soft:#edf9f8;--mint:#25ba9b;font-family:Inter,"Segoe UI",system-ui,-apple-system,sans-serif;color:var(--ink);background:#f2faf8}
+ body{margin:0;background:radial-gradient(ellipse at 10% 0%,#e1f7f3 0,transparent 50%),#f2faf8;min-height:100vh}
+ main{max-width:1180px;margin:0 auto;padding:22px 30px 14px}
+ section{border:1px solid #e5f1ee;border-radius:24px;padding:30px;background:#fff;box-shadow:0 8px 32px #135b6210;margin-bottom:22px}
+ .hidden{display:none!important}
+ .app-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;padding:8px 3px 22px;margin:0;border:0;border-radius:0;background:transparent;box-shadow:none}
+ .brand{display:flex;align-items:center;gap:13px}.brand-logo{width:47px;height:47px;flex:none}
+ .brand h1{display:flex;align-items:center;gap:20px;margin:0;font-size:29px;letter-spacing:-1.2px;color:#103347;font-weight:800}
+ .brand h1 small{font-size:17px;font-weight:500;letter-spacing:0;color:#527581;border-left:1px solid #c8e0df;padding-left:20px}
+ button{font-family:inherit;transition:background .15s,border-color .15s,box-shadow .15s,transform .15s}
+ .nav-skills{display:flex;align-items:center;gap:10px;border:1px solid #d1edee;border-radius:999px;background:#e6f6f7;color:#006d7e;font:inherit;font-weight:700;padding:12px 20px;cursor:pointer}
+ .nav-skills svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:3;stroke-linecap:round}
+ #storageNotice{flex-basis:100%;margin:0;padding:12px 16px;background:#fff5db;border-radius:12px;color:#76521b}
+ .setup-shell{padding:0;background:transparent;border:0;box-shadow:none}
+ .welcome{position:relative;isolation:isolate;overflow:hidden;padding:35px 24px 32px;text-align:center;border-radius:24px;background:linear-gradient(115deg,#d3f5f5,#edfcf8 65%,#dff7f6);margin-bottom:25px}
+ .welcome h2{position:relative;margin:0 0 9px;font-size:clamp(25px,3.5vw,40px);line-height:1.2;letter-spacing:-1.4px;font-weight:800;color:#103347}
+ .welcome p{position:relative;margin:0;color:#527581;font-size:clamp(15px,1.8vw,19px);line-height:1.6}
+ .welcome:before,.welcome-bubble{content:"";position:absolute;z-index:-1;border-radius:50%;width:210px;height:210px;background:#91e3e65c;left:-90px;bottom:-135px}
+ .welcome-bubble{width:170px;height:170px;left:auto;right:-28px;bottom:-90px;background:#a8e9dd75}
+ .welcome-dot{position:absolute;width:29px;height:29px;border-radius:50%;right:32px;top:21px;background:#f9ce5180;z-index:-1}
+ .section-label{font-size:13px;font-weight:700;letter-spacing:.04em;color:#547782;margin:0 0 12px 3px}
+ .chapter-grid{display:grid;grid-template-columns:1fr 1fr;gap:17px;margin-bottom:24px}
+ label.chapter-tile{display:grid;grid-template-columns:22px 60px minmax(0,1fr);gap:16px;align-items:center;margin:0;padding:23px 22px;border:1.5px solid #e0eeec;border-radius:21px;background:#fff;box-shadow:0 5px 22px #12596508;cursor:pointer;min-height:151px;transition:border-color .15s,box-shadow .15s}
+ .chapter-tile:has(input:checked){border-color:#72c6ca;box-shadow:0 4px 18px #087e8910}
+ .chapter-tile:hover{border-color:var(--teal);box-shadow:0 8px 24px #087e8918}
+ .chapter-tile input{width:22px;height:22px;accent-color:var(--teal);margin:0;cursor:pointer;align-self:start;margin-top:4px}
+ .chapter-icon{display:grid;place-items:center;border-radius:50%;width:60px;height:60px;background:linear-gradient(135deg,#edf9f8,#e6f4f5);color:var(--teal)}
+ .chapter-icon svg{width:40px;height:40px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.chapter-icon .icon-dot{fill:#f9ce51;stroke:none}
+ .chapter-content{display:block;min-width:0}.chapter-kicker{display:block;font-size:12px;font-weight:550;color:#577a86;margin-bottom:5px}
+ .chapter-content>strong{display:block;font-size:18px;line-height:1.35;font-weight:750;letter-spacing:-.3px}
+ .home-progress{display:flex;align-items:center;gap:11px;margin-top:15px}.home-track{display:block;flex:1;min-width:24px;height:10px;border-radius:999px;background:#e9f1f2;overflow:hidden}
+ .home-fill{display:block;height:100%;width:0;border-radius:999px;background:linear-gradient(90deg,#16c3c8,#009cad);transition:width .25s ease}
+ .home-percent{font-size:12px;font-weight:700;white-space:nowrap;color:#47707b}.chapter-caption{display:block;font-size:10px;color:#65858f;margin-top:7px}
+ .setup-controls{border:1px solid #e3efec;border-radius:22px;background:white;padding:24px 27px 16px;box-shadow:0 7px 27px #175b650a}
+ .mode-title{position:absolute;clip-path:inset(50%);width:1px;height:1px;overflow:hidden;white-space:nowrap}
+ .mode-row{display:inline-flex;background:#eaf5f5;padding:5px;border-radius:16px;gap:4px;max-width:100%;margin-bottom:16px}
+ .mode-btn{flex:initial;min-width:165px;padding:11px 22px;border:0;border-radius:12px;color:#426d7a;background:transparent;font-weight:700;font-size:14px}
+ .mode-btn.active{background:var(--teal);color:white;box-shadow:0 4px 10px #007d8922}
+ .control-bottom{display:flex;align-items:center;justify-content:space-between;gap:22px;flex-wrap:wrap;padding-top:4px}
+ .count-wrap{display:flex;align-items:center;gap:16px;margin:0}.count-title{font-weight:550;color:#416875;font-size:14px;margin:0}
+ .count-buttons{display:flex;gap:3px;padding:4px;border:1px solid #e2f0ef;background:#f5fbfa;border-radius:999px}
+ .count-btn{min-width:64px;border:0;border-radius:999px;background:transparent;padding:9px 17px;font-size:14px;color:#416c78}
+ .count-btn.active{background:var(--teal);color:#fff;box-shadow:0 2px 7px #007d891c}
+ button.primary,.toolbar button.primary{background:var(--teal);color:white;border:1px solid var(--teal);border-radius:999px;font-size:15px;font-weight:700;padding:13px 23px;box-shadow:0 5px 12px #007d8914;min-height:46px}
+ button.primary:hover:not(:disabled){background:#006a76;transform:translateY(-1px)}
+ #start{min-width:265px;padding:14px 26px;font-size:16px}#start:after{content:" →";margin-left:17px;font-size:20px;line-height:1}
+ .text-button{display:block;font:inherit;font-size:13px;font-weight:650;background:none;border:0;color:#007b8b;padding:14px 12px 1px;margin:8px auto 0;cursor:pointer}.text-button span{margin-left:8px}
+ #setupError{font-size:14px;color:#a52d3f;margin:8px 0 0}#setupError:empty{margin:0}
+ .app-footer{text-align:center;color:#6a8992;font-size:11px;line-height:1.6;padding:0 8px 14px}
+ #paperOptions{background:#f3fbf9;border-color:#d8ebe6;padding:17px;border-radius:15px;margin-bottom:18px}
+ #paperOptions input[type=text],#answerSpace{border-color:#b9d7d2!important;border-radius:10px!important;color:var(--ink)}
+ .help,.muted,small{color:var(--muted)}.help{line-height:1.7}
+ .toolbar{gap:9px;margin:15px 0}.toolbar button,.plain-btn,.skill-practice{border-color:#cee5e3;color:#256271;border-radius:12px;background:#f5fbfa;font-size:14px}
+ .toolbar button:hover:not(:disabled),.plain-btn:hover,.skill-practice:hover{background:#e8f6f3;border-color:#94cfcb}
+ .toolbar button.active{background:#dff4ef;border-color:#87cfc7;color:#14635f}
+ #quiz{max-width:900px;margin:6px auto 22px;padding:32px}
+ #quiz .meta{align-items:center;color:#4a7380;font-size:13px}
+ #progress{font-weight:700}.session-score{background:#edf8f5;border-radius:999px;padding:7px 11px;font-size:12px}
+ .quiz-meter{height:5px;background:#e8f3f1;border-radius:999px;overflow:hidden;margin:15px 0 26px}.quiz-meter>div{height:100%;width:0;border-radius:999px;background:linear-gradient(90deg,#37c7b3,#048996);transition:width .2s}
+ #prompt{font-size:clamp(19px,2.3vw,24px);font-weight:650;line-height:1.8;margin:0 0 24px;color:var(--ink);overflow-wrap:anywhere}
+ .options{gap:13px}.option{border:1.5px solid #d2e7e4;border-radius:17px;background:#f8fcfb;min-height:83px;padding:18px;text-align:left;color:var(--ink);font-size:18px;line-height:1.65}
+ .option strong{display:inline-grid;place-items:center;min-width:27px;height:27px;border-radius:9px;background:#e9f3f0;color:#507581;font:650 12px system-ui,sans-serif;margin-right:9px;vertical-align:middle}
+ .option:hover:not(:disabled){border-color:#4fb6b8;background:#effaf6;box-shadow:0 4px 12px #0c7a8210}
+ .option:disabled{opacity:1;color:var(--ink)}.option.good{background:#e8f8ed;border:1.5px solid #59b47d}.option.good strong{background:#cdeed8;color:#246c40}
+ .option.bad{background:#fff1f2;border:1.5px solid #d47583}.option.bad strong{background:#f9dfe4;color:#96374a}
+ .feedback{font-size:15px;line-height:1.8;font-weight:500;margin:18px 0;padding:0;overflow-wrap:anywhere}.feedback:not(:empty){padding:16px 18px;background:#f0f9f5;border-radius:15px;color:#294f4c}
+ #next{display:block;margin-left:auto}#result{max-width:850px;margin:auto auto 22px;padding:34px}#result h2{font-size:26px;margin:0 0 14px}#score{font-size:38px;font-weight:800;color:var(--teal);letter-spacing:-1px;margin:16px 0}
+ #skills h2,#paper>.meta h2{font-size:25px;font-weight:750;letter-spacing:-.6px;margin:0}
+ .skills-summary{padding:18px;background:#ecf8f4;border-radius:15px;color:#23685c;font-size:14px}
+ .chapter-card{border-color:#d6e9e4;border-radius:19px;margin:17px 0}.chapter-card>summary{background:#f4faf7;padding:19px;font-size:15px;color:#234f58}.chapter-average{color:#64838c;font-size:12px;margin-top:5px}
+ .chapter-body{padding:0 20px 8px}.skill-card{border-color:#e1eeea;padding:18px 0}.skill-name{color:#244b56;font-size:14px}.skill-value{font-size:14px}.skill-bar{background:#e8f1ed;height:10px}.skill-meta small{font-size:11px;color:#607d84}.skill-practice{font-size:12px;padding:8px 12px}
+ .sheet-window{border-radius:18px;background:#e7f2ef;padding:23px}.a4-sheet{box-shadow:0 4px 20px #1c595c12}
+ button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid #16a6b0;outline-offset:4px}
+ button:disabled{opacity:.55;cursor:default}
+ @media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+ @media(max-width:850px){main{padding:17px 22px}.chapter-tile{gap:12px!important;padding:20px 17px!important;grid-template-columns:21px 47px minmax(0,1fr)!important}.chapter-icon{width:47px;height:47px}.chapter-icon svg{width:33px;height:33px}.chapter-content>strong{font-size:16px}.chapter-grid{gap:13px}.count-wrap{gap:12px}.control-bottom{gap:18px}#start{min-width:225px}}
+ @media(max-width:620px){main{padding:14px}.app-header{padding:2px 1px 17px;gap:10px}.brand{gap:8px}.brand-logo{width:36px;height:39px}.brand h1{font-size:24px;gap:11px;letter-spacing:-.8px}.brand h1 small{font-size:12px;padding-left:11px}.nav-skills{padding:10px 13px;font-size:12px;gap:7px}.nav-skills svg{width:16px;height:16px}.welcome{padding:26px 18px;border-radius:20px;margin-bottom:20px}.welcome h2{letter-spacing:-.8px;font-size:28px}.welcome p{font-size:14px;margin:10px auto 0;max-width:290px}.welcome-dot{right:12px;top:12px;width:20px;height:20px}.chapter-grid{grid-template-columns:1fr;gap:11px;margin-bottom:18px}label.chapter-tile{min-height:121px;grid-template-columns:22px 50px minmax(0,1fr)!important;padding:18px!important;gap:14px!important;border-radius:18px}.chapter-icon{width:50px;height:50px}.chapter-content>strong{font-size:17px}.home-progress{margin-top:11px}.chapter-caption{font-size:10px}.chapter-kicker{font-size:11px}.setup-controls{padding:17px;border-radius:20px}.mode-row{display:flex;width:100%;border-radius:14px;margin-bottom:18px}.mode-btn{flex:1;min-width:0;padding:11px 8px;font-size:13px}.control-bottom{flex-direction:column;align-items:stretch;gap:20px}.count-wrap{justify-content:space-between}.count-title{font-size:13px}.count-btn{min-width:56px;padding:9px 12px}#start{width:100%;font-size:16px;padding:13px 15px;min-width:0}.text-button{padding:14px 4px 3px;font-size:12px}section{padding:22px 18px;border-radius:20px}.app-footer{font-size:10px}#quiz{padding:22px 18px}#prompt{font-size:19px;margin-bottom:21px}.options{grid-template-columns:1fr;gap:11px}.option{min-height:70px;padding:15px;font-size:18px}.feedback{font-size:14px;margin:15px 0}.feedback:not(:empty){padding:13px}#next{width:100%;margin-top:12px}.quiz-meter{margin:14px 0 20px}#skills h2,#paper>.meta h2{font-size:21px}.chapter-body{padding:0 13px 7px}.chapter-card>summary{padding:16px;font-size:14px}.skill-meta{flex-direction:column;align-items:flex-start;gap:9px}.skill-practice{min-height:39px}.toolbar button{font-size:12px}.skills-summary{font-size:13px;padding:14px}.sheet-window{padding:9px}#result{padding:24px 20px}#score{font-size:30px}}
+ @media(max-width:380px){main{padding:10px}.brand h1{font-size:21px;gap:8px}.brand h1 small{font-size:11px;padding-left:8px}.brand-logo{width:29px}.nav-skills{padding:9px 10px;font-size:11px}.nav-skills svg{display:none}.welcome h2{font-size:25px}label.chapter-tile{grid-template-columns:20px 39px minmax(0,1fr)!important;gap:10px!important;padding:15px 13px!important}.chapter-icon{width:39px;height:39px}.chapter-icon svg{width:29px;height:29px}.chapter-content>strong{font-size:15px}.home-percent{font-size:11px}.home-progress{gap:7px}}
+}
+
+@media screen{
+ .chapter-icon{background:linear-gradient(140deg,#e7f8f2,#e9f5f7);box-shadow:inset 0 0 0 1px #d8eeea}
+ .chapter-icon .chapter-mark{width:46px;height:46px;fill:none;stroke:#007d89;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+ .chapter-summary-content{display:inline-flex;align-items:center;gap:13px;vertical-align:middle;max-width:calc(100% - 25px)}
+ .chapter-summary-icon{display:grid;place-items:center;flex:none;width:43px;height:43px;border-radius:13px;background:#e2f3ed}
+ .chapter-summary-icon .chapter-mark{width:32px;height:32px;fill:none;stroke:#007d89;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+ @media(max-width:850px){.chapter-icon .chapter-mark{width:36px;height:36px}}
+ @media(max-width:620px){.chapter-icon .chapter-mark{width:39px;height:39px}.chapter-summary-content{gap:10px}.chapter-summary-icon{width:34px;height:37px;border-radius:10px}.chapter-summary-icon .chapter-mark{width:28px;height:28px}}
+ @media(max-width:380px){.chapter-icon .chapter-mark{width:31px;height:31px}}
+}
+
+/* Axes gradués vectoriels, communs au QCM et aux fiches. */
+.axis-figure{margin:14px auto 10px;max-width:640px;break-inside:avoid;line-height:1.3}
+.axis-figure svg{display:block;width:100%;height:auto;overflow:visible}
+.axis-figure figcaption{font:11px/1.5 system-ui,sans-serif;color:#526d77;margin:3px 0 0;font-weight:400}
+.axis-a{color:#007d89}.axis-b{color:#346db8}.axis-result{color:#16803a}
+.axis-base{stroke:#bccbce;stroke-width:1}.axis-tick{stroke:#bccbce;stroke-width:1}
+.axis-segment{stroke:currentColor;stroke-width:4;stroke-linecap:round}.axis-b .axis-segment{stroke-dasharray:6 4}
+.axis-result .axis-segment{stroke-width:5}.axis-end{stroke:currentColor;stroke-width:2;fill:currentColor}.axis-end.excluded{fill:white}
+.axis-arrow{fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.axis-name{fill:currentColor;font:700 14px system-ui,sans-serif}.axis-number{fill:#203d47;font:14px system-ui,sans-serif}.axis-empty{fill:#203d47;font:13px system-ui,sans-serif}
+#questionFigure:empty{display:none}#questionFigure .axis-figure{margin-top:-4px;margin-bottom:22px}
+@media screen{.feedback .axis-figure{background:#fff;border-radius:12px;padding:8px 10px}.sheet-correction .axis-figure{margin:9px 0}.sheet-correction .axis-figure figcaption{font-size:9px}}
+@media print{.axis-a,.axis-b,.axis-result{color:#111!important}.axis-figure figcaption,.axis-number,.axis-empty{color:#111!important;fill:#111!important}.axis-figure{max-width:100%;margin:3mm 0}.axis-figure figcaption{font-size:7pt}.axis-base,.axis-tick{stroke:#888}.axis-segment{stroke-width:3}.axis-result .axis-segment{stroke-width:4}}
+
+/* Représentations de fonctions : tracés et guides restent vectoriels. */
+.function-figure{max-width:630px;margin:12px auto 17px;break-inside:avoid;line-height:1.35}
+.function-figure svg{display:block;width:100%;height:auto;background:white;border-radius:12px}
+.function-figure figcaption{font:11px/1.5 system-ui,sans-serif;color:#4a6873;font-weight:400;margin:5px 0 0}
+.function-grid{stroke:#e5e7eb;stroke-width:.7}.function-axis{fill:none;stroke:#65818a;stroke-width:1.3;stroke-linejoin:round;stroke-linecap:round}
+.function-number{fill:#294953;font:16px system-ui,sans-serif}.function-axis-label{fill:#294953;font:italic 16px Georgia,serif}
+.function-curve-label{font:italic 20px Georgia,serif;paint-order:stroke;stroke:white;stroke-width:4;stroke-linejoin:round}.function-label-a{fill:#2563eb}.function-label-b{fill:#c2410c}@media print{.function-curve-label{fill:#111!important}}
+.function-curve{fill:none;stroke-width:2.7;stroke-linecap:round;stroke-linejoin:round}
+.function-a{stroke:#2563eb}.function-b{stroke:#c2410c}.function-curve.function-b{stroke-dasharray:7 4}
+.function-guide{fill:none;stroke:#4b5563;stroke-width:1.6;stroke-dasharray:4 4}
+.function-horizontal{stroke:#4b5563;stroke-width:1.6;stroke-dasharray:6 4}.function-guide-label{fill:#374151;font:14px system-ui,sans-serif}
+.function-focus{fill:#ffd56a;stroke:#99611b;stroke-width:1.5}.function-end{fill:white;stroke-width:2}.function-end.open{fill:none!important;stroke-linecap:round}.function-end.function-a:not(.open){fill:#2563eb}.function-end.function-b:not(.open){fill:#c2410c}
+.function-domain-bracket{fill:none;stroke:#168374;stroke-width:2;stroke-linejoin:miter}.function-domain{stroke:#21a18a;stroke-width:4}.function-domain-end{fill:#21a18a;stroke:#168374;stroke-width:1.6}.function-domain-end.open{fill:white}
+@media screen{.feedback .function-figure{padding:9px;background:white;border-radius:15px}.sheet-correction .function-figure{margin:8px 0}.sheet-correction .function-figure figcaption{font-size:9px}#questionFigure .function-figure{margin-top:-3px;margin-bottom:22px}}
+@media print{.function-figure{margin:3mm 0;max-width:100%}.function-figure figcaption{color:#111;font-size:7pt}.function-curve,.function-guide,.function-horizontal,.function-end,.function-domain,.function-domain-end,.function-domain-bracket,.function-focus{stroke:#111!important}.function-end:not(.open),.function-domain-end:not(.open){fill:#111!important}.function-end.open,.function-domain-end.open,.function-focus{fill:white!important}.function-number,.function-axis-label,.function-guide-label{fill:#111!important}.function-axis{stroke:#444}.function-grid{stroke:#ccc}}
+
+/* Figures de vecteurs : même unité horizontale et verticale. */
+.vector-figure{max-width:600px;margin:13px auto 17px;break-inside:avoid;line-height:1.35}
+.vector-figure svg{display:block;width:100%;height:auto;background:white;border-radius:12px;overflow:visible}
+.vector-figure figcaption{font:11px/1.5 system-ui,sans-serif;font-weight:400;color:#4a6873;margin:5px 0 0}
+.vector-grid{stroke:#e2ecee;stroke-width:.7}.vector-axis{fill:none;stroke:#779098;stroke-width:1.2;stroke-linejoin:round}
+.vector-number{fill:#4b6672;font:14px system-ui,sans-serif}.vector-a{color:#007d89}.vector-b{color:#3d65a0}.vector-result{color:#188253}
+.vector-shaft{stroke:currentColor;stroke-width:2.8;stroke-linecap:round}.vector-head{fill:currentColor;stroke:none}.vector-b .vector-shaft{stroke-dasharray:6 3}.vector-result .vector-shaft{stroke-width:3.8}.vector-dashed .vector-shaft{stroke-dasharray:4 4;stroke-width:2}
+.vector-name{fill:currentColor;font:italic 16px Georgia,serif;font-weight:700}.vector-point{fill:#304f57}.vector-point-label{fill:#263f48;font:600 15px system-ui,sans-serif}
+.vector-guide{fill:none;stroke:#bc7117;stroke-width:1.5;stroke-dasharray:4 3}.vector-measure{fill:#925b16;font:12px system-ui,sans-serif}.vector-zero{fill:#fff;stroke:#188253;stroke-width:2.4}
+.vector-outline{fill:none;stroke:#a1b8bc;stroke-width:1.4}
+@media screen{.chapter-tile:last-child{grid-column:1/-1}.feedback .vector-figure{padding:9px;background:#fff;border-radius:14px}.sheet-correction .vector-figure{margin:8px 0}.sheet-correction .vector-figure figcaption{font-size:9px}#questionFigure .vector-figure{margin-top:-3px;margin-bottom:22px}}
+@media print{.vector-figure{margin:3mm 0;max-width:100%}.vector-figure figcaption{color:#111;font-size:7pt}.vector-a,.vector-b,.vector-result{color:#111!important}.vector-number,.vector-point-label,.vector-measure{fill:#111!important}.vector-name{fill:currentColor}.vector-guide,.vector-zero{stroke:#111!important}.vector-point{fill:#111}.vector-axis{stroke:#555}.vector-grid{stroke:#ccc}.vector-outline{stroke:#777}}
+
+.option:has(.study-table){display:flex;align-items:center;gap:10px;min-width:0}.option .study-table{flex:1;min-width:0;margin:0}.option .study-table figcaption{display:none}#answers:has(.study-table){grid-template-columns:1fr}
+.study-table{max-width:630px;margin:16px auto;break-inside:avoid}.study-table svg{display:block;width:100%;background:white;border-radius:12px}.study-table text{fill:#294953;font:16px Georgia,serif;text-anchor:middle}.study-rule{fill:none;stroke:#73858c;stroke-width:1}.study-arrow{fill:none;stroke:#2563eb;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}.study-table figcaption{font:11px/1.5 system-ui;color:#4a6873;margin-top:5px}.study-sign{overflow-x:auto;max-width:100%;padding:18px 4px;background:white;border-radius:12px;font-size:clamp(12px,3.5vw,19px);text-align:center}.chapter-tile:last-child{grid-column:auto!important}
+@media print{.study-arrow{stroke:#111}.study-table{margin:3mm 0}.study-sign{font-size:10pt;padding:3mm 0}.study-table figcaption{font-size:7pt}}
+</style></head><body><main><section class="app-header"><div class="brand"><svg xmlns="http://www.w3.org/2000/svg" class="brand-logo" viewBox="0 0 48 48" aria-hidden="true"><path fill="#007d89" fill-rule="evenodd" d="M24 3 46 42H34l-4-7H18l-4 7H2L24 3Zm0 15-6 11h12Z"/><path fill="#21bfb2" d="m2 42 16-28 6 10-10 18Z"/><circle cx="41" cy="8" r="4" fill="#f4c64d"/></svg><h1>AutoMaths <small>Seconde</small></h1></div><button type="button" id="openSkills" class="nav-skills"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V10m7 10V4m7 16V7"/></svg>Mes acquis</button><p id="storageNotice" class="help hidden" role="status"></p></section><section id="setup" class="setup-shell"><div class="welcome"><span class="welcome-bubble" aria-hidden="true"></span><span class="welcome-dot" aria-hidden="true"></span><h2>Prêt pour une nouvelle série ?</h2><p>Quelques minutes pour progresser, à ton rythme.</p></div><div class="chapter-section"><h2 class="section-label">Choisis tes chapitres</h2><div class="chapter-grid"><label class="chapter-tile"><input type="checkbox" class="chapter" value="1" checked aria-label="Sélectionner le chapitre 1 : Ensembles et puissances"><span class="chapter-icon" id="chapterIcon1"><svg class="chapter-mark" viewBox="0 0 48 48" aria-hidden="true"><circle cx="18" cy="27" r="11" fill="#ddf4ef"/><circle cx="30" cy="27" r="11" fill="#c8eeea" fill-opacity=".6"/><circle cx="18" cy="27" r="11"/><circle cx="30" cy="27" r="11"/><path d="M33 8c0-5 8-5 8 0 0 3-5 5-8 9h9"/><circle cx="8" cy="12" r="3" fill="#f4c64d" stroke="none"/></svg></span><span class="chapter-content"><span class="chapter-kicker">Chapitre 1</span><strong>Ensembles et puissances</strong><span class="home-progress"><span class="home-track" id="homeTrack1" role="progressbar" aria-label="Progression du chapitre 1" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="homeFill1" class="home-fill"></span></span><span id="homePercent1" class="home-percent">À découvrir</span></span><span class="chapter-caption" id="homeCaption1"></span></span></label><label class="chapter-tile"><input type="checkbox" class="chapter" value="2" checked aria-label="Sélectionner le chapitre 2 : Repérage"><span class="chapter-icon" id="chapterIcon2"><svg class="chapter-mark" viewBox="0 0 48 48" aria-hidden="true"><path d="M7 29h34m-5-5 5 5-5 5M18 42V7m-5 5 5-5 5 5"/><path d="m18 29 12-13" stroke="#21bfb2" stroke-width="3"/><path d="M30 16v13M18 16h12" stroke="#b8deda" stroke-dasharray="2 3"/><circle cx="18" cy="29" r="3" fill="#007d89" stroke="none"/><circle cx="30" cy="16" r="4" fill="#f4c64d" stroke="none"/></svg></span><span class="chapter-content"><span class="chapter-kicker">Chapitre 2</span><strong>Repérage</strong><span class="home-progress"><span class="home-track" id="homeTrack2" role="progressbar" aria-label="Progression du chapitre 2" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="homeFill2" class="home-fill"></span></span><span id="homePercent2" class="home-percent">À découvrir</span></span><span class="chapter-caption" id="homeCaption2"></span></span></label><label class="chapter-tile"><input type="checkbox" class="chapter" value="3" checked aria-label="Sélectionner le chapitre 3 : Calcul littéral et racines"><span class="chapter-icon" id="chapterIcon3"><svg class="chapter-mark" viewBox="0 0 48 48" aria-hidden="true"><path d="m6 27 7 8 8-25h21" stroke-width="2.7"/><path d="m25 21 11 13m0-13L25 34" stroke-width="2.7"/><circle cx="41" cy="10" r="3" fill="#f4c64d" stroke="none"/></svg></span><span class="chapter-content"><span class="chapter-kicker">Chapitre 3</span><strong>Calcul littéral et racines</strong><span class="home-progress"><span class="home-track" id="homeTrack3" role="progressbar" aria-label="Progression du chapitre 3" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="homeFill3" class="home-fill"></span></span><span id="homePercent3" class="home-percent">À découvrir</span></span><span class="chapter-caption" id="homeCaption3"></span></span></label><label class="chapter-tile"><input type="checkbox" class="chapter" value="4" checked aria-label="Sélectionner le chapitre 4 : Information chiffrée"><span class="chapter-icon" id="chapterIcon4"><svg class="chapter-mark" viewBox="0 0 48 48" aria-hidden="true"><rect x="8" y="28" width="7" height="12" rx="2" fill="#91ded3" stroke="none"/><rect x="21" y="20" width="7" height="20" rx="2" fill="#22b7b1" stroke="none"/><rect x="34" y="10" width="7" height="30" rx="2" fill="#007d89" stroke="none"/><path d="m10 19 13-8 13-5" stroke-width="2"/><circle cx="36" cy="6" r="3" fill="#f4c64d" stroke="none"/></svg></span><span class="chapter-content"><span class="chapter-kicker">Chapitre 4</span><strong>Information chiffrée</strong><span class="home-progress"><span class="home-track" id="homeTrack4" role="progressbar" aria-label="Progression du chapitre 4" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="homeFill4" class="home-fill"></span></span><span id="homePercent4" class="home-percent">À découvrir</span></span><span class="chapter-caption" id="homeCaption4"></span></span></label><label class="chapter-tile"><input type="checkbox" class="chapter" value="5" checked aria-label="Sélectionner le chapitre 5 : Valeurs absolues, intervalles et encadrement"><span class="chapter-icon" id="chapterIcon5"><svg class="chapter-mark" viewBox="0 0 48 48" aria-hidden="true"><path d="M5 28h38m-5-5 5 5-5 5"/><path d="M15 18v20m19-20v20" stroke="#21bfb2"/><path d="M15 28h19" stroke-width="4"/><circle cx="15" cy="28" r="4" fill="#007d89"/><circle cx="34" cy="28" r="4" fill="white"/><path d="M19 7h10" stroke="#f4c64d" stroke-width="3"/></svg></span><span class="chapter-content"><span class="chapter-kicker">Chapitre 5</span><strong>Valeurs absolues, intervalles et encadrement</strong><span class="home-progress"><span class="home-track" id="homeTrack5" role="progressbar" aria-label="Progression du chapitre 5" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="homeFill5" class="home-fill"></span></span><span id="homePercent5" class="home-percent">À découvrir</span></span><span class="chapter-caption" id="homeCaption5"></span></span></label><label class="chapter-tile"><input type="checkbox" class="chapter" value="6" checked aria-label="Sélectionner le chapitre 6 : Généralités sur les fonctions"><span class="chapter-icon" id="chapterIcon6"><svg class="chapter-mark" viewBox="0 0 48 48" aria-hidden="true"><path d="M6 34h36m-5-5 5 5-5 5M16 43V5m-5 5 5-5 5 5"/><path d="M7 23c6 0 8 13 14 9S31 10 41 12" stroke="#007d89" stroke-width="2.7"/><circle cx="32" cy="17" r="3.5" fill="#f4c64d" stroke="none"/></svg></span><span class="chapter-content"><span class="chapter-kicker">Chapitre 6</span><strong>Généralités sur les fonctions</strong><span class="home-progress"><span class="home-track" id="homeTrack6" role="progressbar" aria-label="Progression du chapitre 6" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="homeFill6" class="home-fill"></span></span><span id="homePercent6" class="home-percent">À découvrir</span></span><span class="chapter-caption" id="homeCaption6"></span></span></label><label class="chapter-tile"><input type="checkbox" class="chapter" value="7" checked aria-label="Sélectionner le chapitre 7 : Vecteurs, partie 1"><span class="chapter-icon" id="chapterIcon7"><svg class="chapter-mark" viewBox="0 0 48 48" aria-hidden="true"><path d="M7 36 32 11m-10 0h10v10" stroke-width="2.7"/><path d="M18 42 41 19m-10 0h10v10" stroke="#21bfb2" stroke-width="2.7"/><circle cx="7" cy="36" r="3" fill="#f4c64d" stroke="none"/></svg></span><span class="chapter-content"><span class="chapter-kicker">Chapitre 7</span><strong>Vecteurs — Partie 1</strong><span class="home-progress"><span class="home-track" id="homeTrack7" role="progressbar" aria-label="Progression du chapitre 7" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="homeFill7" class="home-fill"></span></span><span id="homePercent7" class="home-percent">À découvrir</span></span><span class="chapter-caption" id="homeCaption7"></span></span></label><label class="chapter-tile"><input type="checkbox" class="chapter" value="8" checked aria-label="Sélectionner le chapitre 8 : Variations et signe"><span class="chapter-icon" id="chapterIcon8"><svg class="chapter-mark" viewBox="0 0 48 48" aria-hidden="true"><path d="M7 38h35M10 41V7"/><path d="m13 30 9-16 9 12 10-19" stroke-width="2.7"/><circle cx="22" cy="14" r="3" fill="#f4c64d" stroke="none"/></svg></span><span class="chapter-content"><span class="chapter-kicker">Chapitre 8</span><strong>Variations, extrema et signe</strong><span class="home-progress"><span class="home-track" id="homeTrack8" role="progressbar" aria-label="Progression du chapitre 8" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="homeFill8" class="home-fill"></span></span><span id="homePercent8" class="home-percent">À découvrir</span></span><span class="chapter-caption" id="homeCaption8"></span></span></label></div></div><div class="setup-controls"><div class="mode-title">Mode de travail</div>
+<div class="mode-row" role="group" aria-label="Mode de travail">
+  <button type="button" class="mode-btn active" data-mode="quiz" aria-pressed="true">QCM interactif</button>
+  <button type="button" class="mode-btn" data-mode="paper" aria-pressed="false">Fiches PDF</button>
+</div>
+<div id="paperOptions" class="hidden">
+  <label for="sheetTitle">Titre de la fiche</label>
+  <input type="text" id="sheetTitle" value="AutoMaths — Automatismes de Seconde" maxlength="100" autocomplete="off">
+  <label><input type="checkbox" id="showName"> Ajouter Nom, Prénom et Classe</label>
+  <label for="answerSpace">Espace de réponse</label>
+  <select id="answerSpace" style="padding:8px;border:1px solid #94a3b8;border-radius:8px;background:white;font:inherit">
+    <option value="compact">Compact</option>
+    <option value="normal" selected>Normal</option>
+    <option value="large">Grand</option>
+  </select>
+  <p class="help">Fiche d'exercices sans les quatre réponses du QCM. Un seul tirage pour l'énoncé et son corrigé.</p>
+</div><div class="control-bottom"><div class="count-wrap"><div class="count-title">Nombre de questions</div><div class="count-buttons" role="group" aria-label="Nombre de questions"><button type="button" class="count-btn" data-count="5" aria-pressed="false">5</button><button type="button" class="count-btn active" data-count="10" aria-pressed="true">10</button></div><input type="hidden" id="total" value="10"></div><button class="primary" id="start">Commencer ma série</button></div><button type="button" id="setupSkills" class="text-button">Voir mes compétences <span aria-hidden="true">→</span></button><p id="setupError" class="muted" role="alert"></p></div></section><section id="quiz" class="hidden"><div class="meta"><strong id="progress"></strong><span id="sessionScore" class="session-score"></span></div><div id="quizMeter" class="quiz-meter" role="progressbar" aria-label="Progression de la série" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="quizFill"></div></div><h2 id="prompt"></h2><div id="questionFigure"></div><div id="answers" class="options"></div><div id="feedback" class="feedback" aria-live="polite"></div><button class="primary hidden" id="next">Question suivante</button></section><section id="result" class="hidden"><h2>Résultat</h2><p id="score"></p><div id="details"></div><div class="toolbar"><button type="button" id="reviewErrors" class="hidden">Retravailler mes erreurs</button><button type="button" id="resultSkills">Voir mes acquis</button></div><button class="primary" id="restart">Nouvelle série</button></section><section id="paper" class="hidden"><div class="meta"><h2 style="margin:0">Fiche d'automatismes</h2><span id="paperCount" class="muted"></span></div>
+<p class="help">Deux colonnes · Noir et blanc · Mêmes questions dans l'énoncé et le corrigé.</p>
+<div class="toolbar"><button type="button" class="active" id="previewExercise">Aperçu énoncé</button><button type="button" id="previewSolution">Aperçu corrigé</button></div>
+<div class="toolbar"><button type="button" class="primary" id="pdfExercise">PDF énoncé</button><button type="button" class="primary" id="pdfSolution">PDF corrigé</button></div>
+<p class="help">Pour créer un PDF : choisir « Enregistrer au format PDF » dans la fenêtre d'impression.</p>
+<p id="paperStatus" role="status" aria-live="polite"></p>
+<div class="sheet-window"><div id="paperPreview" class="a4-sheet"></div></div>
+<div class="toolbar"><button type="button" id="paperNew">Nouvelle série</button><button type="button" id="paperBack">Modifier la sélection</button></div>
+</section><section id="skills" class="hidden" aria-labelledby="skillsTitle">
+<div class="meta"><h2 id="skillsTitle" tabindex="-1">Acquis des compétences</h2><button type="button" id="closeSkills" class="plain-btn">Revenir</button></div>
+<p class="help">Objectif : cinq réussites consécutives. La jauge compte les bonnes réponses parmi tes cinq dernières tentatives, à raison de 20 points par réussite. Après une erreur, elle redescend et la compétence revient plus souvent.</p>
+<p class="help">Une jauge à 100 % indique un acquis dans cet entraînement. Les compétences acquises restent proposées de temps en temps pour entretenir tes connaissances.</p>
+<p id="skillsSummary" class="skills-summary"></p>
+<div class="toolbar"><button type="button" id="reviewWeak" class="primary">Travailler les points à revoir</button></div>
+<div id="skillChapters"></div>
+<p class="help">Ta progression est enregistrée dans ce navigateur, sur cet appareil. Les fiches PDF ne modifient pas les jauges.</p>
+</section><footer class="app-footer">Ta progression est enregistrée sur cet appareil.</footer></main><div id="printDocument"></div><script>
+const R=(a,b)=>a+Math.floor(Math.random()*(b-a+1)),pick=a=>a[R(0,a.length-1)],shuffle=a=>a.map(x=>({x,k:Math.random()})).sort((a,b)=>a.k-b.k).map(v=>v.x),tex=s=>`\\(${s}\\)`,pow=(a,n)=>`${a}^{${n}}`, frac=(a,b)=>`\\frac{${a}}{${b}}`, fmt=n=>n<0?`(${n})`:String(n);
+// Même notation lisible dans les questions, les réponses et les corrigés.
+function readableNotation(input){
+ return String(input).split(/(\\\([\s\S]*?\\\))/g).map(part=>{
+  const cleaned=part.replace(/(^|[^\d.,}])1(?=x(?:\b|\^|²))/g,'$1');
+  return part.startsWith('\\(')&&part.endsWith('\\)')?cleaned:cleaned.replace(/\{,\}/g,',');
+ }).join('');
+}
+const chapterMarks={1:`<svg class="chapter-mark" viewBox="0 0 48 48" aria-hidden="true"><circle cx="18" cy="27" r="11" fill="#ddf4ef"/><circle cx="30" cy="27" r="11" fill="#c8eeea" fill-opacity=".6"/><circle cx="18" cy="27" r="11"/><circle cx="30" cy="27" r="11"/><path d="M33 8c0-5 8-5 8 0 0 3-5 5-8 9h9"/><circle cx="8" cy="12" r="3" fill="#f4c64d" stroke="none"/></svg>`,2:`<svg class="chapter-mark" viewBox="0 0 48 48" aria-hidden="true"><path d="M7 29h34m-5-5 5 5-5 5M18 42V7m-5 5 5-5 5 5"/><path d="m18 29 12-13" stroke="#21bfb2" stroke-width="3"/><path d="M30 16v13M18 16h12" stroke="#b8deda" stroke-dasharray="2 3"/><circle cx="18" cy="29" r="3" fill="#007d89" stroke="none"/><circle cx="30" cy="16" r="4" fill="#f4c64d" stroke="none"/></svg>`,3:`<svg class="chapter-mark" viewBox="0 0 48 48" aria-hidden="true"><path d="m6 27 7 8 8-25h21" stroke-width="2.7"/><path d="m25 21 11 13m0-13L25 34" stroke-width="2.7"/><circle cx="41" cy="10" r="3" fill="#f4c64d" stroke="none"/></svg>`,4:`<svg class="chapter-mark" viewBox="0 0 48 48" aria-hidden="true"><rect x="8" y="28" width="7" height="12" rx="2" fill="#91ded3" stroke="none"/><rect x="21" y="20" width="7" height="20" rx="2" fill="#22b7b1" stroke="none"/><rect x="34" y="10" width="7" height="30" rx="2" fill="#007d89" stroke="none"/><path d="m10 19 13-8 13-5" stroke-width="2"/><circle cx="36" cy="6" r="3" fill="#f4c64d" stroke="none"/></svg>`};
+chapterMarks[5]=`<svg class="chapter-mark" viewBox="0 0 48 48" aria-hidden="true"><path d="M5 28h38m-5-5 5 5-5 5"/><path d="M15 18v20m19-20v20" stroke="#21bfb2"/><path d="M15 28h19" stroke-width="4"/><circle cx="15" cy="28" r="4" fill="#007d89"/><circle cx="34" cy="28" r="4" fill="white"/><path d="M19 7h10" stroke="#f4c64d" stroke-width="3"/></svg>`;
+chapterMarks[6]=`<svg class="chapter-mark" viewBox="0 0 48 48" aria-hidden="true"><path d="M6 34h36m-5-5 5 5-5 5M16 43V5m-5 5 5-5 5 5"/><path d="M7 23c6 0 8 13 14 9S31 10 41 12" stroke="#007d89" stroke-width="2.7"/><circle cx="32" cy="17" r="3.5" fill="#f4c64d" stroke="none"/></svg>`;
+chapterMarks[7]=`<svg class="chapter-mark" viewBox="0 0 48 48" aria-hidden="true"><path d="M7 36 32 11m-10 0h10v10" stroke-width="2.7"/><path d="M18 42 41 19m-10 0h10v10" stroke="#21bfb2" stroke-width="2.7"/><circle cx="7" cy="36" r="3" fill="#f4c64d" stroke="none"/></svg>`;
+chapterMarks[8]=`<svg class="chapter-mark" viewBox="0 0 48 48" aria-hidden="true"><path d="M7 38h35M10 41V7"/><path d="m13 30 9-16 9 12 10-19" stroke-width="2.7"/><circle cx="22" cy="14" r="3" fill="#f4c64d" stroke="none"/></svg>`;
+function chapterLogo(chapter){return chapterMarks[chapter]||''}
+const families=[];function add(c,id,name,fn){families.push({c,id,name,fn})}function question(q,correct,wrong,explanation){q=readableNotation(q);correct=readableNotation(correct);wrong=wrong.map(readableNotation);explanation=readableNotation(explanation);let choices=[correct,...wrong.filter(x=>x!==correct)];choices=[...new Set(choices)];if(choices.length<4)throw Error('Propositions insuffisantes');return {q,correct,choices:shuffle(choices.slice(0,4)),explanation}}
+const n=()=>R(2,8),signed=()=>pick([-1,1])*R(1,9),square=()=>R(2,12);
+// CHAPITRE 1 : 12 familles
+add(1,'C1-01','Plus petit ensemble',()=>{let a=R(2,19),type=R(0,3),v=[String(a),String(-a),frac(a%10||3,10),frac(a,3*a)][type],ans=['\\mathbb N','\\mathbb Z','\\mathbb D','\\mathbb Q'][type];return question(`Quel est le plus petit ensemble contenant ${tex(v)} ?`,tex(ans),['\\mathbb N','\\mathbb Z','\\mathbb D','\\mathbb Q','\\mathbb R'].map(tex).filter(x=>x!==tex(ans)),`On cherche le plus petit ensemble usuel.`)});
+add(1,'C1-02','Inclusion ou appartenance',()=>{
+ const sets=['\\mathbb N','\\mathbb Z','\\mathbb D','\\mathbb Q','\\mathbb R'];
+ const symbols=['\\subset','\\not\\subset','\\in','\\notin'];
+ let left,right,correct,explanation;
+ if(R(0,1)===0){
+  const a=R(0,4),b=pick([0,1,2,3,4].filter(i=>i!==a));
+  left=sets[a];right=sets[b];correct=a<b?'\\subset':'\\not\\subset';
+  explanation=`On compare deux ensembles : on utilise un symbole d’inclusion. L’ordre est ${tex(sets.join('\\subset'))}. Ainsi ${tex(left+correct+right)}.`;
+ }else{
+  const kind=R(0,7);let value,level;
+  if(kind===0){value=String(R(0,30));level=0}
+  else if(kind===1){value=String(-R(1,30));level=1}
+  else if(kind===2){value=dec(pick([-1,1])*(R(1,9)+R(1,9)/10));level=2}
+  else if(kind===3){const d=pick([3,7,9,11]);value=frac(pick([-1,1])*R(1,d-1),d);level=3}
+  else if(kind===4){value=(R(0,1)?'-':'')+'\\sqrt{'+pick([2,3,5,6,7,8,10,11,12,13])+'}';level=4}
+  else if(kind===5){const a=R(2,12);value='\\sqrt{'+a*a+'}';level=0}
+  else if(kind===6){value=frac(pick([-1,1])*R(1,9),10**R(1,3));level=2}
+  else{value=R(0,1)?'\\pi':'-\\pi';level=4}
+  const target=R(0,4),descriptions=['un entier naturel','un entier relatif négatif','un nombre décimal non entier','un rationnel non décimal','un réel irrationnel'];
+  left=value;right=sets[target];correct=level<=target?'\\in':'\\notin';
+  explanation=`On compare un nombre à un ensemble : on utilise ${tex('\\in')} ou ${tex('\\notin')}. Ici ${tex(value)} est ${descriptions[level]}. Ainsi ${tex(left+correct+right)}.`;
+ }
+ return question(`Compléter : ${tex(left+'\\;\\ldots\\;'+right)}`,tex(correct),symbols.filter(s=>s!==correct).map(tex),explanation);
+});
+add(1,'C1-03','Écriture décimale',()=>{let d=pick([2,4,5,8,10,20,25]),a=R(1,9),c=pick([3,7,11]),correct=tex(frac(a,d));return question('Quelle fraction possède une écriture décimale finie ?',correct,[tex(frac(a,c)),tex(frac(a,c*3)),tex(frac(a,7*c))],`Un dénominateur réduit ne doit contenir que les facteurs premiers 2 et 5.`)});
+add(1,'C1-04','Fraction décimale',()=>{let a=R(11,99),k=R(1,3);return question(`Écrire ${tex(frac(a,10**k))} sous forme décimale.`,String(a/10**k).replace('.',','),[String(a/10**(k+1)).replace('.',','),String(a/10**(k-1)).replace('.',','),String((a+1)/10**k).replace('.',',')],`Le dénominateur est une puissance de 10.`)});
+// Construction avec des chiffres : aucun arrondi flottant ni notation « e ».
+function scientificQuestion(digits,e){
+ const comma=digits.length>1?'{,}'+digits.slice(1):'';
+ const coefficient=digits[0]+comma;
+ const decimalPosition=e+1;
+ let value;
+ if(decimalPosition<=0)value='0{,}'+'0'.repeat(-decimalPosition)+digits;
+ else if(decimalPosition>=digits.length)value=digits+'0'.repeat(decimalPosition-digits.length);
+ else value=digits.slice(0,decimalPosition)+'{,}'+digits.slice(decimalPosition);
+ const shifted=digits.slice(0,2)+(digits.length>2?'{,}'+digits.slice(2):'');
+ const correct=tex(`${coefficient}\\times 10^{${e}}`);
+ return question(`Écriture scientifique de ${tex(value)} ?`,correct,
+  [tex(`${shifted}\\times 10^{${e-1}}`),tex(`${coefficient}\\times 10^{${e+1}}`),tex(`${coefficient}\\times 10^{${e-1}}`)],
+  `L’écriture scientifique est ${correct}. Le coefficient est écrit en décimal et vérifie ${tex('1\\leq a<10')}. L’exposant est un entier relatif (positif, négatif ou nul).`);
+}
+add(1,'C1-05','Écriture scientifique',()=>{
+ const length=R(2,4);
+ const digits=String(R(10**(length-1),10**length-1)).replace(/0+$/,'');
+ // Pour un coefficient entier, conserver deux chiffres pour le distracteur décalé.
+ return scientificQuestion(digits.length===1?digits+'0':digits,R(-8,8));
+});
+add(1,'C1-06','Produit de puissances',()=>{let a=n(),u=R(2,7),v=R(2,6);return question(`${tex(pow(a,u)+'\\times '+pow(a,v))} = ?`,tex(pow(a,u+v)),[tex(pow(a,u*v)),tex(pow(a,u-v)),tex(pow(a,u+v+1))],`Même base : on additionne les exposants, ${u}+${v}=${u+v}.`)});
+add(1,'C1-07','Quotient de puissances',()=>{let a=n(),u=R(5,12),v=R(1,4);return question(`${tex(frac(pow(a,u),pow(a,v)))} = ?`,tex(pow(a,u-v)),[tex(pow(a,u+v)),tex(pow(a,u*v)),tex(pow(a,v-u))],`Même base : on soustrait les exposants, ${u}-${v}=${u-v}.`)});
+add(1,'C1-08','Puissance de puissance',()=>{let a=n(),u=R(2,5),v=R(2,5);return question(`${tex(`(${pow(a,u)})^{${v}}`)} = ?`,tex(pow(a,u*v)),[tex(pow(a,u+v)),tex(pow(a,u**v)),tex(pow(a,u*v+1))],`Puissance d'une puissance : ${u} ×  ${v}=${u*v}.`)});
+add(1,'C1-09','Puissance de produit',()=>{let a=R(2,5),b=R(6,9),e=R(2,5);return question(`${tex(`(${a}\\times ${b})^{${e}}`)} = ?`,tex(`${pow(a,e)}\\times ${pow(b,e)}`),[tex(`${pow(a,e)}\\times ${b}`),tex(`${a}\\times ${pow(b,e)}`),tex(`${pow(a,e+1)}\\times ${pow(b,e)}`)],'La puissance s’applique à chacun des facteurs.')});
+add(1,'C1-10','Exposants négatifs',()=>{let a=n(),e=R(2,7);return question(`${tex(pow(a,-e))} = ?`,tex(frac(1,pow(a,e))),[tex(pow(a,e)),tex(frac(-1,pow(a,e))),tex(frac(1,pow(a,e+1)))],'Un exposant négatif donne l’inverse.')});
+add(1,'C1-11','Règles combinées',()=>{let a=n(),u=R(2,5),v=R(2,4),w=R(1,5),z=R(1,4),k=u*v-w-z;return question(`${tex(frac(`(${pow(a,u)})^{${v}}\\times ${pow(a,-w)}`,pow(a,z)))} = ?`,tex(pow(a,k)),[tex(pow(a,u+v-w-z)),tex(pow(a,u*v+w-z)),tex(pow(a,u*v-w+z))],`Exposant final : ${u} ×  ${v}-${w}-${z}=${k}.`)});
+add(1,'C1-12','Exposant manquant',()=>{let a=n(),u=R(2,7),v=R(2,7);return question(`${tex(`${pow(a,u)}\\times ${a}^{\\square}=${pow(a,u+v)}`)}. Quel exposant manque ?`,tex(String(v)),[tex(String(u)),tex(String(u+v)),tex(String(Math.abs(u-v)+1))],`L'exposant recherché est ${u+v}-${u}=${v}.`)});
+// CHAPITRE 2 : 9 familles
+add(2,'C2-01','Lire des coordonnées',()=>{let x=signed(),y=signed();return question(`Un point est placé à ${x} unités horizontalement et ${y} unités verticalement depuis l’origine. Ses coordonnées sont :`,tex(`(${x};${y})`),[tex(`(${y};${x})`),tex(`(${-x};${y})`),tex(`(${x};${-y})`)],'Abscisse d’abord, ordonnée ensuite.')});
+add(2,'C2-02','Identifier un point',()=>{let x=signed(),y=signed();return question(`Quel point a pour coordonnées ${tex(`(${x};${y})`)} ?`,tex(`A(${x};${y})`),[tex(`B(${y};${x})`),tex(`C(${-x};${y})`),tex(`D(${x};${-y})`)],'Vérifier dans l’ordre abscisse puis ordonnée.')});
+add(2,'C2-03','Coordonnées du milieu',()=>{let x=R(-5,5),y=R(-5,5),u=R(1,4),v=R(1,4);return question(`Milieu de ${tex(`A(${x-u};${y-v})`)} et ${tex(`B(${x+u};${y+v})`)} ?`,tex(`(${x};${y})`),[tex(`(${2*x};${2*y})`),tex(`(${x+u};${y+v})`),tex(`(${x-u};${y-v})`)],`Milieu : abscisse = (${x-u}+${x+u})/2 = ${x} ; ordonnée = (${y-v}+${y+v})/2 = ${y}.`)});
+add(2,'C2-04','Extrémité connaissant le milieu',()=>{let x=R(-5,5),y=R(-5,5),u=R(1,4),v=R(1,4);return question(`Si ${tex(`I(${x};${y})`)} est le milieu de ${tex(`A(${x-u};${y-v})`)} et ${tex('B')}, quelles sont les coordonnées de B ?`,tex(`(${x+u};${y+v})`),[tex(`(${u};${v})`),tex(`(${x-u};${y-v})`),tex(`(${2*x-u};${2*y-v})`)],`x_B=2 × ${x}-(${x-u})=${x+u} et y_B=2 × ${y}-(${y-v})=${y+v}.`)});
+add(2,'C2-05','Distance entre deux points',()=>{let a=pick([[3,4,5],[5,12,13],[6,8,10],[8,15,17]]),x=R(-4,4),y=R(-4,4);return question(`Distance entre ${tex(`A(${x};${y})`)} et ${tex(`B(${x+a[0]};${y+a[1]})`)} dans un repère orthonormé ?`,tex(String(a[2])),[tex(String(a[0]+a[1])),tex(String(a[2]**2)),tex(String(Math.abs(a[1]-a[0])))],`AB² = (${a[0]})² + (${a[1]})² = ${a[2]**2}, donc AB = ${a[2]}.`)});
+add(2,'C2-06','Formule de distance',()=>question(`Dans un repère orthonormé, ${tex('AB^2')} est égal à :`,tex('(x_B-x_A)^2+(y_B-y_A)^2'),[tex('(x_B+x_A)^2+(y_B+y_A)^2'),tex('(x_B-x_A)+(y_B-y_A)'),tex('(x_B-x_A)^2-(y_B-y_A)^2')],'On additionne les carrés des différences de coordonnées.'));
+add(2,'C2-07','Parallélogramme et milieux',()=>{let a=R(-4,4),b=R(-4,4);return question(`Les diagonales d’un quadrilatère ABCD ont le même milieu ${tex(`I(${a};${b})`)}. Quelle conclusion ?`, 'ABCD est un parallélogramme',['ABCD est forcément un rectangle','ABCD est forcément un losange','ABCD est forcément un carré'],'Les diagonales ont le même milieu : ABCD est donc un parallélogramme.')});
+add(2,'C2-08','Triangle rectangle',()=>{let a=pick([[3,4,5],[5,12,13],[6,8,10]]);return question(`Un triangle ABC vérifie ${tex(`AB=${a[0]},\\ AC=${a[1]},\\ BC=${a[2]}`)}. Quelle est sa nature ?`,'Rectangle en A',['Rectangle en B','Isocèle en A','Équilatéral'],`AB²+AC²=${a[0]**2}+${a[1]**2}=${a[2]**2}=BC², donc ABC est rectangle en A.`)});
+add(2,'C2-09','Nature d’un quadrilatère',()=>{let kind=pick(['losange','rectangle','carré']);let statement={losange:'ABCD est un parallélogramme dont deux côtés consécutifs ont la même longueur.',rectangle:'ABCD est un parallélogramme possédant un angle droit.',carré:'ABCD est un rectangle dont deux côtés consécutifs ont la même longueur.'};return question(statement[kind],kind==='carré'?'Carré':kind==='rectangle'?'Rectangle':'Losange',['Parallélogramme quelconque','Rectangle','Losange','Carré'].filter(x=>x.toLowerCase()!==kind),`On utilise la propriété caractéristique adaptée.`)});
+// CHAPITRE 3 : 15 familles
+add(3,'C3-01','Distributivité simple',()=>{let a=R(2,9),b=R(2,8),c=R(1,8);return question(`Développer ${tex(`${a}(${b}x+${c})`)}.`,tex(`${a*b}x+${a*c}`),[tex(`${a*b}x+${c}`),tex(`${a+b}x+${a*c}`),tex(`${a*b}x+${a+c}`)],'On distribue le facteur à chacun des termes.')});
+add(3,'C3-02','Double distributivité',()=>{let a=R(1,4),b=R(1,8),c=R(1,4),d=R(1,8),k=a*d+b*c;return question(`Développer ${tex(`(${a}x+${b})(${c}x+${d})`)}.`,tex(`${a*c}x^2+${k}x+${b*d}`),[tex(`${a*c}x^2+${a*d}x+${b*d}`),tex(`${a*c}x^2+${b*c}x+${b*d}`),tex(`${a*c}x^2+${k+1}x+${b*d}`)],`Double distributivité : ${a*c}x² + (${a*d}+${b*c})x + ${b*d} = ${a*c}x²+${k}x+${b*d}.`)});
+add(3,'C3-03','Coefficient du terme en x',()=>{let a=R(2,6),b=R(1,7),c=R(2,6),d=R(1,7),k=a*d+b*c;return question(`Coefficient de ${tex('x')} dans ${tex(`(${a}x+${b})(${c}x+${d})`)} ?`,tex(String(k)),[tex(String(a*c)),tex(String(b*d)),tex(String(a*d))],`Coefficient de x : ${a} × ${d}+${b} × ${c}=${k}.`)});
+add(3,'C3-04','Carré d’une somme',()=>{let a=R(1,5),b=R(1,8);return question(`Développer ${tex(`(${a}x+${b})^2`)}.`,tex(`${a*a}x^2+${2*a*b}x+${b*b}`),[tex(`${a*a}x^2+${b*b}`),tex(`${a*a}x^2+${a*b}x+${b*b}`),tex(`${a*a}x^2-${2*a*b}x+${b*b}`)],`On utilise ${tex('(a+b)^2=a^2+2ab+b^2')}, avec ${tex(`a=${a}x`)} et ${tex(`b=${b}`)}. Le double produit vaut ${tex(`2ab=2\\times ${a}x\\times ${b}=${2*a*b}x`)}.`)});
+add(3,'C3-05','Carré d’une différence',()=>{let a=R(1,5),b=R(1,8);return question(`Développer ${tex(`(${a}x-${b})^2`)}.`,tex(`${a*a}x^2-${2*a*b}x+${b*b}`),[tex(`${a*a}x^2+${2*a*b}x+${b*b}`),tex(`${a*a}x^2-${b*b}`),tex(`${a*a}x^2-${a*b}x+${b*b}`)],`On utilise ${tex('(a-b)^2=a^2-2ab+b^2')}, avec ${tex(`a=${a}x`)} et ${tex(`b=${b}`)}. On soustrait le double produit ${tex(`2ab=2\\times ${a}x\\times ${b}=${2*a*b}x`)}.`)});
+add(3,'C3-06','Produit somme-différence',()=>{let a=R(1,6),b=R(1,8);return question(`Développer ${tex(`(${a}x+${b})(${a}x-${b})`)}.`,tex(`${a*a}x^2-${b*b}`),[tex(`${a*a}x^2+${b*b}`),tex(`${a*a}x^2-${2*a*b}x+${b*b}`),tex(`${a*a}x^2+${2*a*b}x-${b*b}`)],`On utilise ${tex('(a+b)(a-b)=a^2-b^2')}, avec ${tex(`a=${a}x`)} et ${tex(`b=${b}`)}.`)});
+add(3,'C3-07','Facteur commun',()=>{let a=R(2,8),b=R(2,8),c=R(1,8);return question(`Factoriser ${tex(`${a*b}x+${a*c}`)}.`,tex(`${a}(${b}x+${c})`),[tex(`${a}(${b}x+${a*c})`),tex(`${b}(${a}x+${c})`),tex(`${a}(${b}x-${c})`)],'Mettre en évidence un facteur commun.')});
+add(3,'C3-08','Factorisation remarquable',()=>{let a=R(2,6),b=R(2,8);return question(`Factoriser ${tex(`${a*a}x^2-${b*b}`)}.`,tex(`(${a}x-${b})(${a}x+${b})`),[tex(`(${a}x-${b})^2`),tex(`(${a}x+${b})^2`),tex(`(${a*a}x-${b})(${a*a}x+${b})`)],`On utilise ${tex('a^2-b^2=(a-b)(a+b)')}, avec ${tex(`a=${a}x`)} et ${tex(`b=${b}`)}.`)});
+add(3,'C3-09','Somme de fractions',()=>{let d=R(3,9),a=R(1,d-1),b=R(1,d-1);return question(`${tex(frac(a,d)+'+'+frac(b,d))} = ?`,tex(frac(a+b,d)),[tex(frac(a+b,2*d)),tex(frac(a*b,d)),tex(frac(a+b,d*d))],'Même dénominateur : on additionne les numérateurs.')});
+add(3,'C3-10','Produit de fractions',()=>{let a=R(2,8),b=R(3,9),c=R(2,8),d=R(3,9);return question(`${tex(frac(a,b)+'\\times '+frac(c,d))} = ?`,tex(frac(a*c,b*d)),[tex(frac(a+c,b+d)),tex(frac(a*c,b+d)),tex(frac(a+c,b*d))],'On multiplie les numérateurs et les dénominateurs.')});
+add(3,'C3-11','Valeur interdite',()=>{let a=R(2,9);return question(`Pour ${tex(frac('1',`x-${a}`))}, quelle valeur de x est interdite ?`,tex(String(a)),[tex(String(-a)),tex('0'),tex(String(a+1))],'Un dénominateur ne peut pas être nul.')});
+add(3,'C3-12','Comparer par différence',()=>{let a=R(2,8),b=R(1,a-1);return question(`Pour ${tex('x>0')}, comparer ${tex(`${a}x+1`)} et ${tex(`${b}x+1`)}.`, 'La première expression est supérieure',['La deuxième expression est supérieure','Elles sont égales','On ne peut pas conclure'],`La différence vaut (${a}-${b})x=${a-b}x>0 puisque x>0.`)});
+add(3,'C3-13','Simplifier une racine',()=>{let a=R(2,9),b=pick([2,3,5,7]);return question(`Simplifier ${tex(`\\sqrt{${a*a*b}}`)}.`,tex(`${a}\\sqrt{${b}}`),[tex(`${a*a}\\sqrt{${b}}`),tex(`${a}\\sqrt{${a*b}}`),tex(`\\sqrt{${a*b}}`)],'Extraire le facteur carré parfait.')});
+add(3,'C3-14','Produit de racines',()=>{let a=R(2,9),b=R(2,9);return question(`${tex(`\\sqrt{${a}}\\times\\sqrt{${b}}`)} = ?`,tex(`\\sqrt{${a*b}}`),[tex(`\\sqrt{${a+b}}`),tex(`${a*b}`),tex(`\\sqrt{${a}}+\\sqrt{${b}}`)],'Le produit de racines positives est la racine du produit.')});
+add(3,'C3-15','Calcul avec des racines',()=>{let a=R(2,8),b=R(2,8),c=pick([2,3,5,7]);return question(`${tex(`${a}\\sqrt{${c}}+${b}\\sqrt{${c}}`)} = ?`,tex(`${a+b}\\sqrt{${c}}`),[tex(`${a*b}\\sqrt{${c}}`),tex(`${a+b}\\sqrt{${2*c}}`),tex(`${a+b+c}`)],'On additionne les coefficients des mêmes racines.')});
+
+// CHAPITRE 4 : Information chiffrée — 13 familles
+const pct=x=>`${x}\\%`,dec=x=>String(Math.round(x*10000)/10000).replace('.', '{,}'), euro=x=>`${dec(x)}\\,\\text{€}`;
+const q4=(label,correct,wrong,explain)=>question(label,tex(correct),wrong.map(tex),explain);
+add(4,'C4-01','Proportion à partir des effectifs',()=>{let total=pick([40,50,80,100,200,250,400]),rate=pick([10,15,20,25,30,40,50,60,75]),part=total*rate/100;return q4(`Dans un groupe de ${total} personnes, ${part} pratiquent un sport. Quelle est leur proportion ?`,pct(rate),[pct(rate+10),pct(Math.max(1,rate-5)),pct(100-rate)],`Proportion = ${part} ÷ ${total} = ${dec(rate/100)}, soit ${rate} %.`)});
+add(4,'C4-02','Passer d’une proportion à un pourcentage',()=>{let rate=pick([5,12,15,20,25,35,40,60,75,80]),d=dec(rate/100);return q4(`Exprimer la proportion ${tex(d)} en pourcentage.`,pct(rate),[pct(rate/10),pct(rate+10),pct(100-rate)],`On multiplie la proportion par 100.`)});
+add(4,'C4-03','Proportion de proportion',()=>{let a=pick([20,30,40,50,60,80]),b=pick([10,20,25,50,75]),r=a*b/100;return q4(`${a} % des élèves sont demi-pensionnaires et ${b} % de ces élèves prennent un dessert. Quel pourcentage de l'ensemble des élèves cela représente-t-il ?`,pct(r),[pct(a+b),pct(b),pct(a)],`On calcule ${dec(a/100)} × ${dec(b/100)} = ${dec(r/100)}, soit ${r} %.`)});
+add(4,'C4-04','Appliquer un pourcentage',()=>{let t=pick([80,120,160,200,240,300,400,500]),r=pick([10,20,25,50,75]),v=t*r/100;return q4(`Calculer ${r} % de ${t}.`,String(v),[String(t-v),String(v+10),String(t*r/10)],`${t} × ${dec(r/100)} = ${v}.`)});
+add(4,'C4-05','Retrouver le total',()=>{let t=pick([80,120,160,200,240,300,400,500]),r=pick([10,20,25,50]),v=t*r/100;return q4(`${v} élèves représentent ${r} % d'un effectif. Quel est l'effectif total ?`,String(t),[String(v*r/100),String(v*100/(100-r)),String(t+v)],`On divise ${v} par ${dec(r/100)} : on obtient ${t}.`)});
+add(4,'C4-06','Variation absolue',()=>{let v=R(20,90),delta=pick([-1,1])*R(5,19),f=v+delta;return q4(`Une quantité passe de ${v} à ${f}. Quelle est sa variation absolue ?`,String(delta),[String(-delta),String(f),String(v)],`Variation absolue = valeur finale − valeur initiale = ${f} − ${v} = ${delta}.`)});
+add(4,'C4-07','Taux d’évolution',()=>{let init=pick([40,50,80,100,120,200]),rate=pick([-25,-20,-10,10,15,20,25,50]),end=init*(1+rate/100);return q4(`Une quantité passe de ${init} à ${dec(end)}. Quel est son taux d'évolution ?`,pct(rate),[pct(-rate),pct(rate+10),pct(rate*2)],`Taux = (valeur finale − valeur initiale) ÷ valeur initiale = ${rate} %.`)});
+add(4,'C4-08','Coefficient multiplicateur',()=>{let r=pick([5,10,15,20,25,30,40]),sign=pick([-1,1]),coef=1+sign*r/100;return q4(`Quel coefficient multiplicateur correspond à une ${sign>0?'augmentation':'diminution'} de ${r} % ?`,dec(coef),[dec(1-sign*r/100),dec(r/100),dec(1+sign*r/10)],`Coefficient multiplicateur = 1 ${sign>0?'+':'−'} ${dec(r/100)} = ${dec(coef)}.`)});
+add(4,'C4-09','Valeur finale après évolution',()=>{let init=pick([80,120,160,200,240,400]),r=pick([10,20,25,50]),sign=pick([-1,1]),end=init*(1+sign*r/100);return q4(`Un prix de ${init} € subit une ${sign>0?'augmentation':'diminution'} de ${r} %. Quel est le nouveau prix ?`,euro(end),[euro(init*(1-sign*r/100)),euro(init+sign*r),euro(init)],`On multiplie ${init} par ${dec(1+sign*r/100)} : ${dec(end)} €.`)});
+add(4,'C4-10','Retrouver la valeur initiale',()=>{let init=pick([80,100,120,160,200,240,400]),r=pick([10,20,25,50]),sign=pick([-1,1]),end=init*(1+sign*r/100);return q4(`Après une ${sign>0?'augmentation':'diminution'} de ${r} %, un prix vaut ${dec(end)} €. Quel était son prix initial ?`,euro(init),[euro(end*(1+sign*r/100)),euro(end-sign*r),euro(end)],`On divise ${dec(end)} par ${dec(1+sign*r/100)} : ${init} €.`)});
+add(4,'C4-11','Coefficient global',()=>{let a=pick([10,20,25]),b=pick([10,20,25]),sa=pick([-1,1]),sb=pick([-1,1]),c=(1+sa*a/100)*(1+sb*b/100);return q4(`Une quantité subit une ${sa>0?'hausse':'baisse'} de ${a} %, puis une ${sb>0?'hausse':'baisse'} de ${b} %. Quel est le coefficient multiplicateur global ?`,dec(c),[dec(1+(sa*a+sb*b)/100),dec((1+sa*a/100)+(1+sb*b/100)),dec(1/c)],`On multiplie les coefficients : ${dec(1+sa*a/100)} × ${dec(1+sb*b/100)} = ${dec(c)}.`)});
+add(4,'C4-12','Taux global',()=>{let a=pick([10,20,25]),b=pick([10,20,25]),sa=pick([-1,1]),sb=pick([-1,1]),c=(1+sa*a/100)*(1+sb*b/100),r=Math.round((c-1)*10000)/100;return q4(`Une quantité subit une ${sa>0?'hausse':'baisse'} de ${a} %, puis une ${sb>0?'hausse':'baisse'} de ${b} %. Quel est le taux d'évolution global ?`,pct(dec(r)),[pct(dec(sa*a+sb*b)),pct(dec(-r)),pct(dec(r+10))],`Le coefficient global vaut ${dec(c)}. Le taux est (${dec(c)} − 1) × 100 = ${dec(r)} %.`)});
+add(4,'C4-13','Évolution réciproque',()=>{let r=pick([10,20,25,50]),sign=pick([-1,1]),coef=1+sign*r/100,reverse=Math.round((1/coef-1)*10000)/100;return q4(`Une quantité subit une ${sign>0?'augmentation':'diminution'} de ${r} %. Quel taux faut-il appliquer ensuite pour retrouver sa valeur initiale (arrondir à 0,01 % si nécessaire) ?`,pct(dec(reverse)),[pct(-sign*r),pct(sign*r),pct(dec(-reverse))],`Le coefficient réciproque est 1 ÷ ${dec(coef)} ; le taux réciproque vaut ${dec(reverse)} %.`)});
+
+// CHAPITRE 5 : Valeurs absolues, intervalles et encadrement — 16 capacités.
+const interval=(lo,hi,lc=true,rc=true)=>({lo,hi,lc:Number.isFinite(lo)&&lc,rc:Number.isFinite(hi)&&rc});
+function intervalEmpty(i){return i.lo>i.hi||(i.lo===i.hi&&!(i.lc&&i.rc))}
+function mergeIntervals(items){
+ const sorted=items.filter(i=>!intervalEmpty(i)).map(i=>interval(i.lo,i.hi,i.lc,i.rc)).sort((a,b)=>a.lo-b.lo||(Number(b.lc)-Number(a.lc)));
+ const out=[];
+ for(const i of sorted){
+  const last=out.at(-1);
+  if(!last||i.lo>last.hi||(i.lo===last.hi&&!last.rc&&!i.lc)){out.push({...i});continue}
+  if(i.hi>last.hi){last.hi=i.hi;last.rc=i.rc}else if(i.hi===last.hi)last.rc=last.rc||i.rc;
+ }
+ return out;
+}
+function intersectIntervals(a,b){
+ const lo=Math.max(a.lo,b.lo),hi=Math.min(a.hi,b.hi);
+ const i=interval(lo,hi,(lo!==a.lo||a.lc)&&(lo!==b.lo||b.lc),(hi!==a.hi||a.rc)&&(hi!==b.hi||b.rc));
+ return intervalEmpty(i)?[]:[i];
+}
+function inIntervals(x,items){return items.some(i=>(x>i.lo||(x===i.lo&&i.lc))&&(x<i.hi||(x===i.hi&&i.rc)))}
+const axisNumber=x=>Number.isFinite(x)?String(x).replace('.',','):x<0?'−∞':'+∞';
+const intervalNumber=x=>Number.isFinite(x)?dec(x):x<0?'-\\infty':'+\\infty';
+function setTex(items){
+ const normalized=mergeIntervals(items);
+ if(!normalized.length)return '\\varnothing';
+ if(normalized.every(i=>i.lo===i.hi))return '\\{'+normalized.map(i=>intervalNumber(i.lo)).join(';')+'\\}';
+ return normalized.map(i=>i.lo===i.hi?'\\{'+intervalNumber(i.lo)+'\\}':`${i.lc?'[':']'}${intervalNumber(i.lo)};${intervalNumber(i.hi)}${i.rc?']':'['}`).join('\\cup');
+}
+function intervalCondition(i,symbol='x'){
+ if(i.lo===i.hi)return symbol+'='+intervalNumber(i.lo);
+ if(i.lo===-Infinity&&i.hi===Infinity)return symbol+'\\in\\mathbb R';
+ if(i.lo===-Infinity)return symbol+(i.rc?'\\leq ':'<')+intervalNumber(i.hi);
+ if(i.hi===Infinity)return symbol+(i.lc?'\\geq ':'>')+intervalNumber(i.lo);
+ return intervalNumber(i.lo)+(i.lc?'\\leq ':'<')+symbol+(i.rc?'\\leq ':'<')+intervalNumber(i.hi);
+}
+function intervalKey(items){return mergeIntervals(items).map(i=>[i.lo,i.hi,i.lc,i.rc].join(':')).join('|')}
+function intervalChoices(correct,candidates=[]){
+ const seen=new Set([intervalKey(correct)]),wrong=[];
+ function push(items){const key=intervalKey(items);if(!seen.has(key)){seen.add(key);wrong.push(items)}}
+ candidates.forEach(push);
+ for(let a=-9;wrong.length<3&&a<12;a++)push([interval(a,a+2)]);
+ return wrong.slice(0,3);
+}
+function intervalQuestion(prompt,correct,candidates,explanation,diagram='',formatter=setTex){
+ const wrong=intervalChoices(correct,candidates);
+ const q=question(prompt,tex(formatter(correct)),wrong.map(i=>tex(formatter(i))),explanation);
+ return {...q,diagram};
+}
+function boundaryAlternatives(i){return [[interval(i.lo,i.hi,!i.lc,i.rc)],[interval(i.lo,i.hi,i.lc,!i.rc)],[interval(i.lo,i.hi,!i.lc,!i.rc)]]}
+function randomInterval(allowInfinity=false){
+ const scale=R(0,3)===0?2:1,lo=R(-8,4)/scale,hi=lo+R(2,8)/scale,i=interval(lo,hi,!!R(0,1),!!R(0,1));
+ if(allowInfinity){const kind=R(0,4);if(kind===0){i.lo=-Infinity;i.lc=false}if(kind===1){i.hi=Infinity;i.rc=false}}
+ return i;
+}
+function intervalPair(){
+ const a=R(-7,0),b=a+R(2,4),c=b+R(1,3),d=c+R(2,4),kind=R(0,5),closed=()=>!!R(0,1);
+ if(kind===0)return [interval(a,b,closed(),closed()),interval(c,d,closed(),closed())];
+ if(kind===1)return [interval(a,c,closed(),closed()),interval(b,d,closed(),closed())];
+ if(kind===2)return [interval(a,d,closed(),closed()),interval(b,c,closed(),closed())];
+ if(kind===3)return [interval(a,b,closed(),closed()),interval(b,d,closed(),closed())];
+ if(kind===4)return [interval(-Infinity,b,false,closed()),interval(c-2,Infinity,closed(),false)];
+ return [interval(a,c,closed(),closed()),interval(a,c,closed(),closed())];
+}
+const svgEscape=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function intervalDiagram(rows,caption='Point plein : borne incluse. Point vide : borne exclue.'){
+ const endpoints=rows.flatMap(r=>r.items.flatMap(i=>[i.lo,i.hi])).filter(Number.isFinite);
+ const min=(endpoints.length?Math.min(...endpoints):0)-2,max=(endpoints.length?Math.max(...endpoints):4)+2;
+ const left=45,right=404,width=420,height=rows.length*56+15,x=v=>left+(v-min)/(max-min)*(right-left);
+ const step=max-min>14?2:1;
+ let content='';
+ rows.forEach((row,n)=>{
+  const y=22+n*56,color=['axis-a','axis-b','axis-result'][Math.min(n,2)];
+  content+=`<g class="${color}"><text x="5" y="${y+5}" class="axis-name">${svgEscape(row.label)}</text><line class="axis-base" x1="${left}" y1="${y}" x2="${right+3}" y2="${y}"/>`;
+  for(let t=Math.ceil(min/step)*step;t<=max;t+=step)content+=`<line class="axis-tick" x1="${x(t)}" y1="${y-3}" x2="${x(t)}" y2="${y+3}"/>`;
+  const items=mergeIntervals(row.items),labels=new Set();let endpointContent='';
+  for(const i of items){
+   const start=i.lo===-Infinity?left:x(i.lo),end=i.hi===Infinity?right:x(i.hi);
+   if(start!==end)content+=`<line class="axis-segment" x1="${start}" y1="${y}" x2="${end}" y2="${y}"/>`;
+   for(const [value,included,point]of [[i.lo,i.lc,start],[i.hi,i.rc,end]]){
+    if(!Number.isFinite(value)){
+     const dir=value<0?1:-1;content+=`<path class="axis-arrow" d="M${point+dir*7} ${y-5}L${point} ${y}L${point+dir*7} ${y+5}"/>`;continue;
+    }
+    if(labels.has(value))continue;labels.add(value);
+    endpointContent+=`<circle class="axis-end ${included?'included':'excluded'}" cx="${point}" cy="${y}" r="4.5"/><text class="axis-number" x="${point}" y="${y+22}" text-anchor="middle">${svgEscape(axisNumber(value))}</text>`;
+   }
+  }
+  content+=endpointContent;
+  if(!items.length)content+=`<text class="axis-empty" x="205" y="${y-9}" text-anchor="middle">∅ : aucun point</text>`;
+  content+='</g>';
+ });
+ return `<figure class="axis-figure"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${svgEscape('Droites graduées : '+caption)}">${content}</svg><figcaption>${svgEscape(caption)}</figcaption></figure>`;
+}
+function operationExplanation(a,b,result,union){
+ const op=union?'\\cup':'\\cap',rule=union?'On conserve les nombres appartenant à au moins un des deux intervalles.':'On conserve uniquement les nombres appartenant aux deux intervalles.';
+ let text=rule+' '+tex(`A${op}B=${setTex(result)}`)+'. ';
+ if(!result.length)return text+'Aucun nombre n’appartient aux deux intervalles.';
+ if(result.length>1)text+='Il reste deux morceaux séparés : aucun intervalle unique ne convient. ';
+ if(result.length===1&&result[0].lo===result[0].hi)return text+'Le seul point commun est '+tex(intervalNumber(result[0].lo))+', inclus dans les deux intervalles.';
+ for(const value of [...new Set(result.flatMap(i=>[i.lo,i.hi]).filter(Number.isFinite))]){
+  const aa=inIntervals(value,[a]),bb=inIntervals(value,[b]),included=union?aa||bb:aa&&bb;
+  text+='La borne '+axisNumber(value)+' est '+(included?'incluse':'exclue')+' : '+(union?(included?'elle appartient à au moins un intervalle. ':'elle n’appartient à aucun des deux intervalles. '):(included?'elle appartient aux deux intervalles. ':'elle n’appartient pas aux deux intervalles. '));
+ }
+ return text;
+}
+add(5,'C5-01','Des inégalités à un intervalle',()=>{
+ const i=randomInterval(true);
+ return intervalQuestion(`Quel intervalle correspond à ${tex(intervalCondition(i))} ?`,[i],boundaryAlternatives(i),`On lit les bornes et on distingue les inégalités larges et strictes. On obtient ${tex(setTex([i]))}. L’infini n’est jamais inclus.`);
+});
+add(5,'C5-02','D’un intervalle aux inégalités',()=>{
+ const i=randomInterval(true);
+ return intervalQuestion(`Traduire ${tex('x\\in '+setTex([i]))} par des inégalités.`,[i],boundaryAlternatives(i),`Un crochet fermé inclut la borne ; un crochet ouvert l’exclut. Ainsi ${tex(intervalCondition(i))}.`,'',items=>intervalCondition(items[0]));
+});
+add(5,'C5-03','Appartenance à un intervalle',()=>{
+ const i=randomInterval(),mid=(i.lo+i.hi)/2,outside=[i.lo-1,i.hi+1,!i.lc?i.lo:!i.rc?i.hi:i.lo-2];
+ return question(`Quel nombre appartient à ${tex(setTex([i]))} ?`,tex(dec(mid)),outside.map(x=>tex(dec(x))),`${tex(intervalCondition(i))}. Le nombre ${tex(dec(mid))} vérifie ces conditions.`);
+});
+add(5,'C5-04','Lire un intervalle sur un axe',()=>{
+ const i=randomInterval(true),q=intervalQuestion('Quel intervalle est représenté sur cette droite graduée ?',[i],boundaryAlternatives(i),`La partie tracée représente ${tex(setTex([i]))}. Les points pleins sont inclus ; les points vides sont exclus.`);
+ return {...q,figure:intervalDiagram([{label:'I',items:[i]}],'Lire les bornes et leurs points pleins ou vides. Une flèche indique que le tracé se prolonge à l’infini.')};
+});
+for(const union of [false,true])add(5,union?'C5-06':'C5-05',union?'Réunion de deux intervalles':'Intersection de deux intervalles',()=>{
+ const [a,b]=intervalPair(),result=union?mergeIntervals([a,b]):intersectIntervals(a,b),other=union?intersectIntervals(a,b):mergeIntervals([a,b]);
+ const candidates=[other,[interval(Math.min(a.lo,b.lo),Math.max(a.hi,b.hi),true,true)],...result.flatMap(boundaryAlternatives),[],[interval(b.lo,b.hi,b.lc,b.rc)],[interval(a.lo,a.hi,a.lc,a.rc)]];
+ return intervalQuestion(`On donne ${tex('A='+setTex([a]))} et ${tex('B='+setTex([b]))}. Déterminer ${tex(union?'A\\cup B':'A\\cap B')}.`,result,candidates,operationExplanation(a,b,result,union),intervalDiagram([{label:'A',items:[a]},{label:'B',items:[b]},{label:'R',items:result}],'A et B : intervalles de départ. R : résultat. Point plein : inclus ; point vide : exclu.'));
+});
+add(5,'C5-07','Calculer une valeur absolue',()=>{
+ const numerator=pick([-1,1])*R(1,19),denominator=pick([1,2,4]),value=numerator/denominator,v=Math.abs(value),input=denominator>1&&R(0,1)?frac(numerator,denominator):dec(value);
+ return question(`Calculer ${tex('\\left|'+input+'\\right|')}.`,tex(dec(v)),[tex(dec(-v)),tex(dec(v+1)),tex(dec(v+2))],`La valeur absolue est la distance à zéro. Elle est toujours positive ou nulle : ${tex('|'+dec(value)+'|='+dec(v))}.`);
+});
+add(5,'C5-08','Distance sur une droite graduée',()=>{
+ const a=R(-9,5),b=a+R(2,9),v=b-a;
+ return {...question(`Sur une droite graduée, ${tex('A')} a pour abscisse ${tex(String(a))} et ${tex('B')} pour abscisse ${tex(String(b))}. Calculer ${tex('AB')}.`,tex(String(v)),[tex(String(-v)),tex(String(v+1)),tex(String(v*v))],`La distance est ${tex('AB=|'+b+'-('+a+')|='+v)}. Elle est positive.`),diagram:intervalDiagram([{label:'AB',items:[interval(a,b)]}],'Le segment relie les abscisses de A et B ; sa longueur est leur distance.')};
+});
+add(5,'C5-09','Valeur absolue et distance',()=>{
+ const a=pick([-1,1])*R(1,9),expr=a<0?'|x+'+(-a)+'|':'|x-'+a+'|';
+ return question(`${tex(expr)} représente quelle distance ?`,`La distance entre x et ${a}`,[`La distance entre x et ${-a}`,'La distance entre x et 0',`La distance entre 0 et ${a}`],`On reconnaît ${tex('|x-a|')}, distance entre ${tex('x')} et ${tex('a')}, ici ${tex('a='+a)}.`);
+});
+add(5,'C5-10','Équation avec une valeur absolue',()=>{
+ const a=R(-6,6),r=R(1,6),expr=a<0?'|x+'+(-a)+'|':'|x-'+a+'|',result=[interval(a-r,a-r),interval(a+r,a+r)];
+ return intervalQuestion(`Résoudre ${tex(expr+'='+r)}.`,result,[[interval(a-r,a-r)],[interval(a+r,a+r)],[interval(-r,-r),interval(r,r)],[interval(a-r,a+r)]],`On cherche les nombres situés à une distance ${r} de ${a}. Les deux solutions sont ${tex('x='+a+'-'+r+'='+String(a-r))} et ${tex('x='+a+'+'+r+'='+String(a+r))}.`,intervalDiagram([{label:'S',items:result}],'Les deux points sont à la même distance du centre.'));
+});
+add(5,'C5-11','Proximité et intervalle',()=>{
+ const a=R(-5,6),r=R(1,6),closed=!!R(0,1),i=interval(a-r,a+r,closed,closed),expr=a<0?'|x+'+(-a)+'|':'|x-'+a+'|';
+ return intervalQuestion(`Quel est l’ensemble des solutions de ${tex(expr+(closed?'\\leq':'<')+r)} ?`,[i],boundaryAlternatives(i),`On cherche les nombres situés à une distance ${closed?'inférieure ou égale':'strictement inférieure'} à ${r} de ${a}. Ainsi ${tex(intervalCondition(i))}, soit ${tex(setTex([i]))}.`,intervalDiagram([{label:'S',items:[i]}]));
+});
+add(5,'C5-12','D’un intervalle à une valeur absolue',()=>{
+ const a=pick([-1,1])*R(1,6),r=R(1,5),closed=!!R(0,1),i=interval(a-r,a+r,closed,closed),expr=center=>center<0?'|x+'+(-center)+'|':'|x-'+center+'|',op=closed?'\\leq':'<';
+ return {...question(`Quelle condition équivaut à ${tex('x\\in '+setTex([i]))} ?`,tex(expr(a)+op+r),[tex(expr(-a)+op+r),tex(expr(a)+(closed?'<':'\\leq')+r),tex(expr(a)+op+(r+1))],`Le centre est ${tex('('+String(a-r)+'+'+String(a+r)+')/2='+a)} et le rayon est ${tex('('+String(a+r)+'-('+String(a-r)+'))/2='+r)}. On obtient ${tex(expr(a)+op+r)}.`),diagram:intervalDiagram([{label:'I',items:[i]}])};
+});
+add(5,'C5-13','Encadrer une somme',()=>{
+ const a=R(-7,3),b=a+R(1,5),c=R(-5,4),d=c+R(1,5),i=interval(a+c,b+d);
+ return intervalQuestion(`Si ${tex(a+'\\leq x\\leq '+b)} et ${tex(c+'\\leq y\\leq '+d)}, quel est l’encadrement le plus précis possible de ${tex('x+y')} ?`,[i],[[interval(a+d,b+d)],[interval(a+c,b+c)],[interval(a+c-1,b+d+1)]],`On additionne les bornes de même sens : ${tex(a+'+('+c+')\\leq x+y\\leq '+b+'+('+d+')')}. Donc ${tex(intervalCondition(i,'x+y'))}.`,'',items=>intervalCondition(items[0],'x+y'));
+});
+add(5,'C5-14','Transformer un encadrement',()=>{
+ const a=R(-6,2),b=a+R(2,6),m=pick([-1,1])*R(2,5),k=R(-4,4),expr=m+'x'+(k>0?'+'+k:k<0?String(k):''),i=interval(Math.min(m*a+k,m*b+k),Math.max(m*a+k,m*b+k));
+ return intervalQuestion(`Si ${tex(a+'\\leq x\\leq '+b)}, quel est l’encadrement le plus précis possible de ${tex(expr)} ?`,[i],[[interval(i.lo-1,i.hi+1)],[interval(i.lo+1,i.hi+1)],[interval(i.lo-1,i.hi-1)]],`On multiplie par ${m}${m<0?' : il faut inverser le sens des inégalités':''}, puis on ${k<0?'soustrait '+(-k):'ajoute '+k}. On obtient ${tex(intervalCondition(i,expr))}.`,'',items=>intervalCondition(items[0],expr));
+});
+add(5,'C5-15','Encadrer un produit positif',()=>{
+ const a=R(1,5),b=a+R(1,5),c=R(1,5),d=c+R(1,5),i=interval(a*c,b*d);
+ return intervalQuestion(`Si ${tex(a+'\\leq x\\leq '+b)} et ${tex(c+'\\leq y\\leq '+d)}, quel est l’encadrement le plus précis possible de ${tex('xy')} ?`,[i],[[interval(a*d,b*d)],[interval(a*c,b*c)],[interval(a*c-1,b*d+1)]],`Les deux nombres sont positifs. On peut multiplier les bornes de même sens : ${tex(a+'\\times '+c+'\\leq xy\\leq '+b+'\\times '+d)}, soit ${tex(intervalCondition(i,'xy'))}.`,'',items=>intervalCondition(items[0],'xy'));
+});
+add(5,'C5-16','Éloignement et réunion d’intervalles',()=>{
+ const a=R(-5,5),r=R(1,6),closed=!!R(0,1),result=[interval(-Infinity,a-r,false,closed),interval(a+r,Infinity,closed,false)],expr=a<0?'|x+'+(-a)+'|':'|x-'+a+'|';
+ return intervalQuestion(`Quel est l’ensemble des solutions de ${tex(expr+(closed?'\\geq':'>')+r)} ?`,result,[[interval(a-r,a+r,closed,closed)],[interval(-Infinity,a-r,false,!closed),interval(a+r,Infinity,!closed,false)],[interval(a+r,Infinity,closed,false)]],`La distance à ${a} doit être ${closed?'supérieure ou égale':'strictement supérieure'} à ${r}. On garde les nombres à gauche de ${a-r} ou à droite de ${a+r}. Les bornes sont ${closed?'incluses':'exclues'}.`,intervalDiagram([{label:'S',items:result}],'Deux demi-droites : à gauche ou à droite de la zone de proximité.'));
+});
+
+// CHAPITRE 6 : Généralités sur les fonctions — 10 capacités, sans parité.
+function polynomialText(a,b,c){
+ const terms=[[a,'x^2'],[b,'x'],[c,'']].filter(([v])=>v!==0);
+ return terms.length?terms.map(([v,s],i)=>(v<0?'-':i?'+':'')+(s&&Math.abs(v)===1?'':Math.abs(v))+s).join(''):'0';
+}
+function shiftedSquare(h,k){return (h?'('+ (h<0?'x+'+(-h):'x-'+h)+')^2':'x^2')+(k>0?'+'+k:k<0?String(k):'')}
+function numericFunctionQuestion(prompt,correct,candidates,explanation){
+ const values=[...new Set([correct,...candidates])];
+ for(let delta=1;values.length<4;delta++)if(!values.includes(correct+delta))values.push(correct+delta);
+ return question(prompt,tex(dec(correct)),values.filter(v=>v!==correct).slice(0,3).map(v=>tex(dec(v))),explanation);
+}
+function parabolaModel(){
+ const h=R(-2,2),k=R(-3,2),lo=h-3,hi=h+3;
+ return {h,k,lo,hi,fn:x=>(x-h)**2+k,formula:shiftedSquare(h,k)};
+}
+function functionGraph(model,solution=false){
+ const width=440,height=300,L=44,Rm=18,T=19,B=40;
+ const xMin=model.xMin??-5,xMax=model.xMax??5;
+ const samples=model.curves.map(curve=>Array.from({length:161},(_,i)=>{
+  const x=curve.lo+(curve.hi-curve.lo)*i/160;return [x,curve.fn(x)];
+ }));
+ const ys=samples.flatMap(points=>points.map(p=>p[1])).concat(model.focusY||[],[-1,1]);
+ const yMin=Math.floor(Math.min(...ys))-1,yMax=Math.ceil(Math.max(...ys))+1;
+ const X=x=>L+(x-xMin)/(xMax-xMin)*(width-L-Rm),Y=y=>T+(yMax-y)/(yMax-yMin)*(height-T-B);
+ const zeroX=X(0),zeroY=Y(0),tickStep=yMax-yMin>24?5:yMax-yMin>12?2:1;
+ let svg='';
+ for(let x=Math.ceil(xMin);x<=xMax;x++){
+  svg+=`<line class="function-grid" x1="${X(x)}" y1="${T}" x2="${X(x)}" y2="${height-B}"/>`;
+  if(x!==0)svg+=`<text class="function-number" x="${X(x)}" y="${zeroY+20}" text-anchor="middle">${axisNumber(x)}</text>`;
+ }
+ for(let y=Math.ceil(yMin/tickStep)*tickStep;y<=yMax;y+=tickStep){
+  svg+=`<line class="function-grid" x1="${L}" y1="${Y(y)}" x2="${width-Rm}" y2="${Y(y)}"/>`;
+  if(y!==0)svg+=`<text class="function-number" x="${zeroX-8}" y="${Y(y)+5}" text-anchor="end">${axisNumber(y)}</text>`;
+ }
+ svg+=`<path class="function-axis" d="M${L} ${zeroY}H${width-Rm}m-6-4 6 4-6 4M${zeroX} ${height-B}V${T}m-4 6 4-6 4 6"/><text class="function-number" x="${zeroX-8}" y="${zeroY+20}" text-anchor="end">0</text><text class="function-axis-label" x="${width-Rm-3}" y="${zeroY-9}">x</text><text class="function-axis-label" x="${zeroX+9}" y="${T+6}">y</text>`;
+ model.curves.forEach((curve,index)=>{
+  const path=samples[index].map(([x,y],i)=>(i?'L':'M')+X(x).toFixed(3)+' '+Y(y).toFixed(3)).join(' ');
+  svg+=`<path class="function-curve function-${index?'b':'a'}" d="${path}"/>`;
+ });
+ if(solution){
+  for(const h of model.horizontal||[])svg+=`<line class="function-horizontal" x1="${L}" y1="${Y(h)}" x2="${width-Rm}" y2="${Y(h)}"/><text class="function-guide-label" x="${L+6}" y="${Y(h)-9}" text-anchor="start">y = ${axisNumber(h)}</text>`;
+  for(const point of model.guides||[]){
+   svg+=`<path class="function-guide" d="M${X(point.x)} ${zeroY}V${Y(point.y)}${point.horizontal?'H'+zeroX:''}"/>`;
+   svg+=`<circle class="function-focus" cx="${X(point.x)}" cy="${Y(point.y)}" r="4.7"/>`;
+  }
+  if(model.domain){
+   const i=model.domain;svg+=`<line class="function-domain" x1="${X(i.lo)}" y1="${zeroY}" x2="${X(i.hi)}" y2="${zeroY}"/>`;
+   for(const [value,included,side]of [[i.lo,i.lc,1],[i.hi,i.rc,-1]]){
+    const x=X(value),direction=included?side:-side;
+    svg+=`<path class="function-domain-bracket" d="M${x+direction*5} ${zeroY-7}H${x}V${zeroY+7}H${x+direction*5}"/>`;
+   }
+  }
+ }
+ // Extrémité incluse : point plein ; exclue : arc ouvert vers l’extérieur.
+ model.curves.forEach((curve,index)=>{
+  for(const [x,closed,side]of [[curve.lo,curve.lc!==false,-1],[curve.hi,curve.rc!==false,1]]){
+   const cx=X(x),cy=Y(curve.fn(x)),cls=`function-end function-${index?'b':'a'}`;
+   if(closed)svg+=`<circle class="${cls}" cx="${cx}" cy="${cy}" r="4"/>`;
+   else svg+=`<path class="${cls} open" d="M${cx+side*8.535533906} ${cy-3.535533906} A5 5 0 1 ${side===1?0:1} ${cx+side*8.535533906} ${cy+3.535533906}"/>`;
+  }
+ });
+ // Noms des courbes, placés près du tracé dans leur couleur respective.
+ model.curves.forEach((curve,index)=>{
+  const fraction=index?.78:.24,x=curve.lo+(curve.hi-curve.lo)*fraction;
+  const px=Math.max(L+18,Math.min(width-Rm-24,X(x)+10));
+  const py=Math.max(T+18,Math.min(height-B-12,Y(curve.fn(x))-12));
+  svg+=`<text class="function-curve-label function-label-${index?'b':'a'}" x="${px}" y="${py}">𝒞<tspan baseline-shift="sub" font-size="12">${index?'g':'f'}</tspan></text>`;
+ });
+ const caption=model.caption||(model.curves.length>1?'Courbe f : trait plein bleu. Courbe g : trait orange en tirets.':'Courbe représentative de la fonction f.');
+ return `<figure class="function-figure"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${svgEscape(caption)}" data-x-min="${xMin}" data-x-max="${xMax}" data-y-min="${yMin}" data-y-max="${yMax}">${svg}</svg><figcaption>${svgEscape(caption+(solution&&model.solutionCaption?' '+model.solutionCaption:''))}</figcaption></figure>`;
+}
+function withFunctionGraph(q,model){return {...q,figure:functionGraph(model),diagram:functionGraph(model,true)}}
+add(6,'C6-01','Vocabulaire : image et antécédent',()=>{
+ const a=R(-8,8),b=pick(Array.from({length:17},(_,i)=>i-8).filter(v=>v!==a)),image=!!R(0,1);
+ const prompt=`On sait que ${tex('f('+a+')='+b)}. `+(image?`Quelle est l’image de ${tex(String(a))} par ${tex('f')} ?`:`Quel antécédent de ${tex(String(b))} est donné par cette égalité ?`);
+ return numericFunctionQuestion(prompt,image?b:a,[image?a:b,a+b,a-b],`${tex('f('+a+')='+b)} signifie que ${b} est l’image de ${a}, et que ${a} est un antécédent de ${b}.`);
+});
+add(6,'C6-02','Calculer une image',()=>{
+ const a=pick([-2,-1,1,2,3]),b=R(-5,5),c=R(-6,6),x=R(-4,4),v=a*x*x+b*x+c,formula=polynomialText(a,b,c),substitution=formula.replace(/x/g,'('+x+')');
+ return numericFunctionQuestion(`Soit ${tex('f(x)='+formula)}. Calculer ${tex('f('+x+')')}.`,v,[a*x+b+c,a*x*x-b*x+c,v+1],`On remplace chaque ${tex('x')} par ${tex(String(x))}, avec des parenthèses si nécessaire : ${tex('f('+x+')='+substitution+'='+v)}.`);
+});
+add(6,'C6-03','Lire une image sur une courbe',()=>{
+ const varied=!!R(0,1),v=varied?variationModel():null,p=varied?{fn:v.fn,lo:v.xs[0],hi:v.xs.at(-1)}:parabolaModel(),x=varied?pick(v.xs):p.h+R(-2,2),y=p.fn(x),model={curves:[{fn:p.fn,lo:p.lo,hi:p.hi}],xMin:p.lo-1,xMax:p.hi+1,guides:[{x,y,horizontal:true}],solutionCaption:'Les pointillés relient l’abscisse choisie à la courbe puis à l’axe des ordonnées.'};
+ return withFunctionGraph(numericFunctionQuestion(`Déterminer graphiquement ${tex('f('+x+')')}.`,y,[x,-y,y+1,y-1],`Depuis l’abscisse ${x}, on rejoint la courbe verticalement, puis on lit l’ordonnée : ${tex('f('+x+')='+y)}.`),model);
+});
+add(6,'C6-04','Appartenance d’un point à une courbe',()=>{
+ const a=pick([-2,-1,1,2]),b=R(-3,3),c=R(-4,4),x=R(-3,3),f=t=>a*t*t+b*t+c,formula=polynomialText(a,b,c);
+ const correct=tex('('+x+';'+f(x)+')');
+ const wrong=[1,2,3].map((d,i)=>{const t=x+d;return tex('('+t+';'+(f(t)+(i%2?-1:1))+')')});
+ return question(`Quel point appartient à la courbe de ${tex('f(x)='+formula)} ? Les réponses donnent ses coordonnées.`,correct,wrong,`Un point ${tex('M(a;b)')} appartient à la courbe si et seulement si ${tex('b=f(a)')}. Ici ${tex('f('+x+')='+f(x))}, donc le point ${correct} appartient à la courbe.`);
+});
+add(6,'C6-05','Antécédents par le calcul',()=>{
+ const h=R(-4,4),k=R(-5,5),r=R(0,4),negative=R(0,4)===0,delta=negative?-R(1,5):r*r,target=k+delta,formula=shiftedSquare(h,k);
+ const result=negative?[]:r===0?[interval(h,h)]:[interval(h-r,h-r),interval(h+r,h+r)];
+ const explain=negative?'Un carré ne peut pas être négatif : il n’y a aucun antécédent.':r===0?`Le carré est nul uniquement si ${tex('x='+h)}.`:`On a ${tex((h?'(x'+(h<0?'+'+(-h):'-'+h)+')':'x')+'='+r)} ou ${tex((h?'(x'+(h<0?'+'+(-h):'-'+h)+')':'x')+'=-'+r)}. Les antécédents sont ${h-r} et ${h+r}.`;
+ return intervalQuestion(`La fonction ${tex('f(x)='+formula)} est définie sur ${tex('\\mathbb R')}. Quel est l’ensemble des antécédents de ${tex(String(target))} ?`,result,[[interval(h-r,h+r)],[interval(h,h)],[interval(-r,-r),interval(r,r)],[]],`On résout ${tex('f(x)='+target)}, soit ${tex((h?'(x'+(h<0?'+'+(-h):'-'+h)+')^2':'x^2')+'='+delta)}. `+explain);
+});
+add(6,'C6-06','Résoudre graphiquement f(x) = k',()=>{
+ const p=parabolaModel(),r=R(0,4),negative=R(0,5)===0,target=negative?p.k-1:p.k+r*r,roots=negative||r>3?[]:r===0?[p.h]:[p.h-r,p.h+r],result=roots.map(x=>interval(x,x));
+ const model={curves:[{fn:p.fn,lo:p.lo,hi:p.hi}],xMin:p.lo-1,xMax:p.hi+1,focusY:[target],horizontal:[target],guides:roots.map(x=>({x,y:target})),solutionCaption:roots.length?'On projette les points d’intersection sur l’axe des abscisses.':'La droite horizontale ne rencontre pas la courbe sur son domaine.'};
+ const explanation=`Les solutions de ${tex('f(x)='+target)} sont les abscisses des points où la courbe rencontre la droite ${tex('y='+target)}. `+(roots.length?`On lit ${tex('S='+setTex(result))}.`:'Il n’y a aucun point d’intersection, donc '+tex('S=\\varnothing')+'.');
+ return withFunctionGraph(intervalQuestion(`Résoudre graphiquement ${tex('f(x)='+target)} sur le domaine représenté.`,result,[[interval(p.h-r,p.h+r)],[interval(p.h,p.h)],[interval(-r,-r),interval(r,r)],[]],explanation),model);
+});
+add(6,'C6-07','Lire un ensemble de définition',()=>{
+ const lo=R(-5,-1),hi=R(1,5),i=interval(lo,hi,!!R(0,1),!!R(0,1)),v=variationModel(),fn=R(0,1)?x=>v.fn(v.xs[0]+(x-lo)/(hi-lo)*(v.xs.at(-1)-v.xs[0])):x=>x*x/4-1;
+ const model={curves:[{fn,lo,hi,lc:i.lc,rc:i.rc}],xMin:lo-1,xMax:hi+1,domain:i,solutionCaption:'La projection sur l’axe des abscisses donne le domaine ; les crochets indiquent si les bornes sont incluses ou exclues.'};
+ return withFunctionGraph(intervalQuestion(`Quel est l’ensemble de définition de la fonction représentée ?`,[i],boundaryAlternatives(i),`La courbe est tracée pour les abscisses allant de ${lo} à ${hi}. La borne ${lo} est ${i.lc?'incluse':'exclue'} et la borne ${hi} est ${i.rc?'incluse':'exclue'}. Donc ${tex('D_f='+setTex([i]))}.`),model);
+});
+add(6,'C6-08','Domaine avec un dénominateur',()=>{
+ const m=pick([1,2,4]),b=pick([-1,1])*R(1,9),root=-b/m,numerator=polynomialText(0,R(1,3),R(-5,5)),denominator=polynomialText(0,m,b),result=[interval(-Infinity,root,false,false),interval(root,Infinity,false,false)];
+ return intervalQuestion(`Déterminer l’ensemble de définition de ${tex('f(x)='+frac(numerator,denominator))}.`,result,[[interval(-Infinity,Infinity)],[interval(root,root)],[interval(root,Infinity,true,false)]],`Le dénominateur doit être non nul : ${tex(denominator+'\\ne 0')}. L’unique valeur interdite est ${tex('x='+dec(root))}. Ainsi ${tex('D_f=\\mathbb R\\setminus\\{'+dec(root)+'\\}')}.`);
+});
+add(6,'C6-09','Domaine avec une racine carrée',()=>{
+ const m=pick([-2,-1,1,2]),b=R(-7,7),root=-b/m,radicand=polynomialText(0,m,b),i=m>0?interval(root,Infinity,true,false):interval(-Infinity,root,false,true);
+ const opposite=m>0?interval(-Infinity,root,false,true):interval(root,Infinity,true,false);
+ return intervalQuestion(`Déterminer l’ensemble de définition de ${tex('f(x)=\\sqrt{'+radicand+'}')}.`,[i],[[interval(i.lo,i.hi,false,false)],[opposite],[interval(-Infinity,Infinity)]],`Le nombre sous la racine doit être positif ou nul : ${tex(radicand+'\\geq 0')}. Cela équivaut à ${tex(intervalCondition(i))}${m<0?' ; la division par un nombre négatif inverse le sens de l’inégalité':''}. Donc ${tex('D_f='+setTex([i]))}.`);
+});
+add(6,'C6-10','Résoudre graphiquement f(x) = g(x)',()=>{
+ const slope=R(-1,1),intercept=R(-2,2),g=x=>slope*x+intercept,kind=R(0,2),r1=R(-3,0),r2=R(1,3),roots=kind===0?[]:kind===1?[r1]:[r1,r2];
+ const f=kind===0?x=>g(x)+(x-r1)**2/4+1:kind===1?x=>g(x)+(x-r1)**2/2:x=>g(x)+(x-r1)*(x-r2)/2;
+ const result=roots.map(x=>interval(x,x)),model={curves:[{fn:f,lo:-4,hi:4},{fn:g,lo:-4,hi:4}],xMin:-5,xMax:5,guides:roots.map(x=>({x,y:g(x)})),solutionCaption:roots.length?'Les solutions sont les abscisses des points d’intersection, repérées par les pointillés.':'Les deux courbes n’ont aucun point commun sur le domaine représenté.'};
+ return withFunctionGraph(intervalQuestion(`Résoudre graphiquement ${tex('f(x)=g(x)')} sur le domaine représenté.`,result,[[interval(r1,r2)],[interval(r1,r1)],[interval(r2,r2)],[]],`On cherche les abscisses des points d’intersection des deux courbes. `+(roots.length?`On lit ${tex('S='+setTex(result))}.`:`Les courbes ne se rencontrent pas : ${tex('S=\\varnothing')}.`)),model);
+});
+
+// CHAPITRE 7 : Vecteurs, partie 1 — 12 capacités.
+const vadd=(a,b)=>({x:a.x+b.x,y:a.y+b.y}),vsub=(a,b)=>({x:a.x-b.x,y:a.y-b.y}),vscale=(a,k)=>({x:k*a.x,y:k*a.y});
+const vtuple=v=>'('+v.x+';'+v.y+')',vArrow=(a,b)=>'\\overrightarrow{'+a+b+'}',vequal=(a,b)=>a.x===b.x&&a.y===b.y;
+function randomVector(limit=4){let u;do{u={x:R(-limit,limit),y:R(-limit,limit)}}while(!u.x&&!u.y);return u}
+function vectorDistractors(correct,candidates){
+ const out=[];for(const v of candidates)if((v.x||v.y)&&!vequal(v,correct)&&!out.some(w=>vequal(w,v)))out.push(v);
+ for(let n=1;out.length<3;n++){const v={x:correct.x+n,y:correct.y};if((v.x||v.y)&&!out.some(w=>vequal(w,v)))out.push(v)}
+ return out.slice(0,3);
+}
+function vectorQuestion(prompt,correct,candidates,explanation){return question(prompt,tex(vtuple(correct)),vectorDistractors(correct,candidates).map(v=>tex(vtuple(v))),explanation)}
+function vectorDiagram(model,solution=false){
+ const W=420,H=330,L=37,Rm=17,T=17,B=30;
+ const coords=[{x:0,y:0},...(model.points||[]),...(model.vectors||[]).flatMap(v=>[v.from,v.to])];
+ const minX=Math.min(...coords.map(p=>p.x))-1,maxX=Math.max(...coords.map(p=>p.x))+1,minY=Math.min(...coords.map(p=>p.y))-1,maxY=Math.max(...coords.map(p=>p.y))+1;
+ const unit=Math.min((W-L-Rm)/(maxX-minX),(H-T-B)/(maxY-minY));
+ const x0=L+((W-L-Rm)-(maxX-minX)*unit)/2-minX*unit,y0=T+((H-T-B)-(maxY-minY)*unit)/2+maxY*unit;
+ const X=x=>x0+x*unit,Y=y=>y0-y*unit;
+ let svg='';
+ for(let x=Math.ceil(minX);x<=maxX;x++){
+  svg+=`<line class="vector-grid" x1="${X(x)}" y1="${Y(minY)}" x2="${X(x)}" y2="${Y(maxY)}"/>`;
+  if(model.numbers!==false&&x!==0)svg+=`<text class="vector-number" x="${X(x)}" y="${Y(0)+18}" text-anchor="middle">${x}</text>`;
+ }
+ for(let y=Math.ceil(minY);y<=maxY;y++){
+  svg+=`<line class="vector-grid" x1="${X(minX)}" y1="${Y(y)}" x2="${X(maxX)}" y2="${Y(y)}"/>`;
+  if(model.numbers!==false&&y!==0)svg+=`<text class="vector-number" x="${X(0)-7}" y="${Y(y)+4}" text-anchor="end">${y}</text>`;
+ }
+ if(model.axes!==false)svg+=`<path class="vector-axis" d="M${X(minX)} ${Y(0)}H${X(maxX)}m-5-4 5 4-5 4M${X(0)} ${Y(minY)}V${Y(maxY)}m-4 5 4-5 4 5"/>`;
+ if(model.numbers!==false)svg+=`<text class="vector-number" x="${X(0)-7}" y="${Y(0)+18}" text-anchor="end">0</text>`;
+ if(model.outline){const p=model.outline;svg+=`<path class="vector-outline" d="${p.map((v,i)=>(i?'L':'M')+X(v.x)+' '+Y(v.y)).join(' ')}Z"/>`}
+ if(solution)for(const g of model.guides||[]){
+  const corner={x:g.to.x,y:g.from.y};
+  svg+=`<path class="vector-guide" d="M${X(g.from.x)} ${Y(g.from.y)}H${X(corner.x)}V${Y(g.to.y)}"/>`;
+  if(g.to.x!==g.from.x)svg+=`<text class="vector-measure" x="${(X(g.from.x)+X(g.to.x))/2}" y="${Y(g.from.y)+(g.from.y===0?34:22)}" text-anchor="middle">Δx = ${g.to.x-g.from.x}</text>`;
+  if(g.to.y!==g.from.y)svg+=`<text class="vector-measure" x="${X(g.to.x)+(g.to.x>=(minX+maxX)/2?-8:8)}" y="${(Y(g.from.y)+Y(g.to.y))/2-5}" text-anchor="${g.to.x>=(minX+maxX)/2?'end':'start'}">Δy = ${g.to.y-g.from.y}</text>`;
+ }
+ for(const v of model.vectors||[]){
+  if(v.solutionOnly&&!solution)continue;
+  const cls='vector-'+(solution&&v.resultOnSolution?'result':v.kind||'a')+(v.dashed?' vector-dashed':'');
+  const ax=X(v.from.x),ay=Y(v.from.y),bx=X(v.to.x),by=Y(v.to.y),dx=bx-ax,dy=by-ay,len=Math.hypot(dx,dy);
+  if(!len){svg+=`<circle class="vector-zero" cx="${ax}" cy="${ay}" r="5"/><text class="vector-name" x="${ax+9}" y="${ay-9}">0</text>`;continue}
+  const ux=dx/len,uy=dy/len,head=Math.min(9,len/3),tip=`${bx},${by} ${bx-head*ux+head*.45*uy},${by-head*uy-head*.45*ux} ${bx-head*ux-head*.45*uy},${by-head*uy+head*.45*ux}`;
+  svg+=`<g class="${cls}" data-from="${v.from.x};${v.from.y}" data-to="${v.to.x};${v.to.y}"><line class="vector-shaft" x1="${ax}" y1="${ay}" x2="${bx}" y2="${by}"/><polygon class="vector-head" points="${tip}"/>`;
+  if(v.label){const lx=(ax+bx)/2+uy*12,baseY=(ay+by)/2-ux*12,ly=model.numbers!==false&&Math.abs(baseY-Y(0))<24?Y(0)-16:baseY;svg+=`<text class="vector-name" x="${lx}" y="${ly}" text-anchor="middle">${svgEscape(v.label)}</text>`;}
+  svg+='</g>';
+ }
+ for(const p of model.points||[]){
+  if(p.solutionOnly&&!solution)continue;
+  const dx=p.labelDx??(p.x<0?-9:8),dy=p.labelDy??(p.y<0&&p.y>=-1?18:-8);
+  svg+=`<circle class="vector-point" cx="${X(p.x)}" cy="${Y(p.y)}" r="2.7"/><text class="vector-point-label" x="${X(p.x)+dx}" y="${Y(p.y)+dy}" text-anchor="${dx<0?'end':'start'}">${svgEscape(p.label||'')}</text>`;
+ }
+ const caption=model.caption||'Les déplacements se lisent sur un quadrillage à unités identiques sur les deux axes.';
+ return `<figure class="vector-figure"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="${svgEscape(caption)}" data-unit="${unit}" data-origin-x="${x0}" data-origin-y="${y0}">${svg}</svg><figcaption>${svgEscape(caption+(solution&&model.solutionCaption?' '+model.solutionCaption:''))}</figcaption></figure>`;
+}
+function withVectorDiagram(q,model,showQuestion=true){return {...q,...(showQuestion?{figure:vectorDiagram(model)}:{}),diagram:vectorDiagram(model,true)}}
+add(7,'C7-01','Direction, sens et norme',()=>{
+ const u=randomVector(3),different=R(0,3)===0,k=pick([-2,-1,1,2]),v=different?{x:-u.y,y:u.x}:vscale(u,k);
+ const states=['Même direction, même sens et même norme','Même direction, même sens et normes différentes','Même direction, sens opposés et même norme','Même direction, sens opposés et normes différentes','Directions différentes'];
+ const answer=different?4:k===1?0:k===2?1:k===-1?2:3;
+ const originU={x:-3,y:-2},originV={x:2,y:2},model={vectors:[{from:originU,to:vadd(originU,u),label:'u'},{from:originV,to:vadd(originV,v),label:'v',kind:'b'}],axes:false,numbers:false,caption:'Comparer les deux flèches u et v, indépendamment de leur point de départ.'};
+ return withVectorDiagram(question('Quelle affirmation décrit correctement les vecteurs '+tex('\\vec u')+' et '+tex('\\vec v')+' ?',states[answer],shuffle(states.filter((_,i)=>i!==answer)).slice(0,3),different?'Les flèches ne portent pas des droites parallèles : leurs directions sont différentes.':`Les flèches sont parallèles. Elles ont ${k>0?'le même sens':'des sens opposés'} et ${Math.abs(k)===1?'la même longueur':'des longueurs différentes'}.`),model);
+});
+for(const opposite of [false,true])add(7,opposite?'C7-03':'C7-02',opposite?'Reconnaître des vecteurs opposés':'Reconnaître des vecteurs égaux',()=>{
+ const u={x:R(1,3),y:R(-2,2)},target=opposite?vscale(u,-1):u;
+ const candidates=shuffle([target,...vectorDistractors(target,[vscale(target,-1),{x:target.y,y:target.x},{x:target.x+1,y:target.y-1}])]);
+ const bases=[{x:-5,y:1},{x:2,y:1},{x:-5,y:-5},{x:2,y:-5}],baseU={x:-3,y:6},labels=['a','b','c','d'];
+ const vectors=[{from:baseU,to:vadd(baseU,u),label:'u'},...candidates.map((v,i)=>({from:bases[i],to:vadd(bases[i],v),label:labels[i],kind:'b'}))];
+ const index=candidates.findIndex(v=>vequal(v,target));vectors[index+1].resultOnSolution=true;
+ const model={vectors,axes:false,numbers:false,caption:'La flèche u est en haut ; les quatre autres sont repérées par a, b, c et d.',solutionCaption:'La flèche verte indique le vecteur recherché.'};
+ return withVectorDiagram(question(`Quel vecteur est ${opposite?'opposé':'égal'} à ${tex('\\vec u')} ?`,tex('\\vec '+labels[index]),labels.filter((_,i)=>i!==index).map(c=>tex('\\vec '+c)),`${opposite?'Deux vecteurs opposés ont la même direction et la même norme, mais des sens contraires.':'Deux vecteurs égaux ont la même direction, le même sens et la même norme.'} Ici ${tex('\\vec '+labels[index]+'='+ (opposite?'-':'')+'\\vec u')}. Les points de départ peuvent être différents.`),model);
+});
+add(7,'C7-04','Utiliser le vecteur nul',()=>{
+ const kind=R(0,2),expr=kind===0?vArrow('A','A'):kind===1?'\\vec u+\\vec 0':'\\vec u-\\vec u',correct=kind===1?'\\vec u':'\\vec 0';
+ return question(`On suppose ${tex('\\vec u\\ne\\vec 0')}. Simplifier ${tex(expr)}.`,tex(correct),['\\vec 0','\\vec u','-\\vec u','2\\vec u'].filter(v=>v!==correct).map(tex),kind===0?'Le déplacement d’un point vers lui-même est nul.':kind===1?'Ajouter le vecteur nul ne change pas un vecteur.':'Un vecteur et son opposé ont une somme nulle.');
+});
+add(7,'C7-05','Lire les coordonnées d’un vecteur',()=>{
+ const u=randomVector(),a={x:R(-3,2),y:R(-3,2)},b=vadd(a,u),model={vectors:[{from:a,to:b,label:'u'}],guides:[{from:a,to:b}],solutionCaption:'On lit le déplacement horizontal puis le déplacement vertical.'};
+ return withVectorDiagram(vectorQuestion(`Lire les coordonnées de ${tex('\\vec u')}.`,u,[vscale(u,-1),{x:u.y,y:u.x},{x:-u.x,y:u.y},{x:u.x,y:-u.y}],`Le déplacement horizontal vaut ${u.x} et le déplacement vertical ${u.y}. Donc ${tex('\\vec u='+vtuple(u))}.`),model);
+});
+add(7,'C7-06','Calculer les coordonnées d’un vecteur',()=>{
+ const a={x:R(-5,5),y:R(-5,5)},u=randomVector(),b=vadd(a,u),model={points:[{...a,label:'A'},{...b,label:'B'}],vectors:[{from:a,to:b}],guides:[{from:a,to:b}]};
+ return withVectorDiagram(vectorQuestion(`On donne ${tex('A'+vtuple(a))} et ${tex('B'+vtuple(b))}. Calculer les coordonnées de ${tex(vArrow('A','B'))}.`,u,[vscale(u,-1),vadd(a,b),{x:u.y,y:u.x}],`${tex(vArrow('A','B')+'=(x_B-x_A;y_B-y_A)=('+b.x+'-('+a.x+');'+b.y+'-('+a.y+'))='+vtuple(u))}. On soustrait les coordonnées du départ à celles de l’arrivée.`),model,false);
+});
+add(7,'C7-07','Déterminer une extrémité',()=>{
+ const a={x:R(-4,4),y:R(-4,4)},u=randomVector(),b=vadd(a,u),findB=!!R(0,1),known=findB?a:b,answer=findB?b:a;
+ const model={points:[{...a,label:'A'},{...b,label:'B'}],vectors:[{from:a,to:b}],guides:[{from:a,to:b}]};
+ const explanation=findB?`L’arrivée s’obtient en ajoutant le déplacement au départ : ${tex('x_B='+a.x+'+('+u.x+')='+b.x)} et ${tex('y_B='+a.y+'+('+u.y+')='+b.y)}.`:`Le départ s’obtient en retirant le déplacement à l’arrivée : ${tex('x_A='+b.x+'-('+u.x+')='+a.x)} et ${tex('y_A='+b.y+'-('+u.y+')='+a.y)}.`;
+ return withVectorDiagram(vectorQuestion(`On connaît ${tex((findB?'A':'B')+vtuple(known))} et ${tex(vArrow('A','B')+'='+vtuple(u))}. Quelles sont les coordonnées de ${tex(findB?'B':'A')} ?`,answer,[findB?vsub(a,u):vadd(b,u),u,{x:answer.y,y:answer.x}],explanation),model,false);
+});
+add(7,'C7-08','Utiliser la relation de Chasles',()=>{
+ const [A,B,C]=shuffle(['A','B','C','D','E']).slice(0,3),a={x:-3,y:-1},b={x:0,y:2},c={x:3,y:0};
+ const model={points:[{...a,label:A},{...b,label:B},{...c,label:C}],vectors:[{from:a,to:b,label:A+B},{from:b,to:c,label:B+C,kind:'b'},{from:a,to:c,label:A+C,kind:'result'}],numbers:false,axes:false,caption:'Les deux déplacements successifs ont le même effet que le déplacement direct.'};
+ return withVectorDiagram(question(`Simplifier avec la relation de Chasles : ${tex(vArrow(A,B)+'+'+vArrow(B,C))}.`,tex(vArrow(A,C)),[vArrow(C,A),vArrow(A,B),vArrow(C,B)].map(tex),`${tex(vArrow(A,B)+'+'+vArrow(B,C)+'='+vArrow(A,C))}. On va de ${A} à ${B}, puis de ${B} à ${C} : le déplacement total va de ${A} à ${C}.`),model,false);
+});
+add(7,'C7-09','Simplifier une somme de vecteurs',()=>{
+ const [A,B,C,D]=shuffle(['A','B','C','D','E','F']).slice(0,4),a={x:-4,y:-1},b={x:-2,y:2},c={x:1,y:1},d={x:4,y:-1};
+ const model={points:[{...a,label:A},{...b,label:B},{...c,label:C},{...d,label:D}],vectors:[{from:a,to:b},{from:b,to:c,kind:'b'},{from:c,to:d},{from:a,to:d,kind:'result'}],axes:false,numbers:false,caption:'La somme se lit en mettant les déplacements bout à bout.'};
+ return withVectorDiagram(question(`Simplifier ${tex(vArrow(A,B)+'+'+vArrow(C,D)+'+'+vArrow(B,C))}.`,tex(vArrow(A,D)),[vArrow(D,A),vArrow(A,C),vArrow(B,D)].map(tex),`On change l’ordre des termes, puis on applique Chasles : ${tex(vArrow(A,B)+'+'+vArrow(B,C)+'+'+vArrow(C,D)+'='+vArrow(A,C)+'+'+vArrow(C,D)+'='+vArrow(A,D))}.`),model,false);
+});
+function vectorSumModel(u,v,points=[]){
+ const o={x:0,y:0},s=vadd(u,v);
+ return {points,numbers:false,axes:false,vectors:[{from:o,to:u,label:'u'},{from:o,to:v,label:'v',kind:'b'},{from:u,to:s,label:'',kind:'b',dashed:true,solutionOnly:true},{from:v,to:s,label:'',dashed:true,solutionOnly:true},{from:o,to:s,label:'s',kind:'result',solutionOnly:true}],solutionCaption:'La flèche s représente u + v. Les copies en pointillés construisent le parallélogramme.'};
+}
+add(7,'C7-10','Reconnaître une somme sur une figure',()=>{
+ let u,v;do{u=randomVector(3);v=randomVector(3)}while(Math.hypot(u.x,u.y)<2||Math.hypot(v.x,v.y)<2||Math.abs(u.x*v.y-u.y*v.x)<.7*Math.hypot(u.x,u.y)*Math.hypot(v.x,v.y));
+ const s=vadd(u,v),candidates=shuffle([s,...vectorDistractors(s,[vsub(u,v),vscale(s,-1),{x:s.y,y:s.x}])]),labels=['A','B','C','D'],index=candidates.findIndex(w=>vequal(w,s));
+ const points=[{x:0,y:0,label:'O'},...candidates.map((p,i)=>({...p,label:labels[i]}))],model=vectorSumModel(u,v,points);
+ return withVectorDiagram(question(`Quel vecteur représente ${tex('\\vec u+\\vec v')} ?`,tex(vArrow('O',labels[index])),labels.filter((_,i)=>i!==index).map(l=>tex(vArrow('O',l))),`On reporte ${tex('\\vec v')} à l’extrémité de ${tex('\\vec u')}. La diagonale issue de ${tex('O')} est ${tex(vArrow('O',labels[index]))}.`),model);
+});
+add(7,'C7-11','Additionner des coordonnées',()=>{
+ const u=randomVector(),v=randomVector(),s=vadd(u,v),model=vectorSumModel(u,v);
+ return withVectorDiagram(vectorQuestion(`On donne ${tex('\\vec u='+vtuple(u))} et ${tex('\\vec v='+vtuple(v))}. Calculer les coordonnées de ${tex('\\vec u+\\vec v')}.`,s,[vsub(u,v),vscale(s,-1),{x:s.y,y:s.x}],`On additionne les coordonnées de même rang : ${tex('\\vec u+\\vec v=('+u.x+'+('+v.x+');'+u.y+'+('+v.y+'))='+vtuple(s))}.`),model,false);
+});
+add(7,'C7-12','Parallélogramme et égalité de vecteurs',()=>{
+ const a={x:-3,y:-1},b={x:1,y:-1},c={x:3,y:2},d={x:-1,y:2},first=!!R(0,1),left=first?vArrow('A','B'):vArrow('A','D'),correct=first?vArrow('D','C'):vArrow('B','C');
+ const vectors=first?[{from:a,to:b},{from:d,to:c,kind:'b'}]:[{from:a,to:d},{from:b,to:c,kind:'b'}];
+ const model={outline:[a,b,c,d],points:[{...a,label:'A'},{...b,label:'B'},{...c,label:'C'},{...d,label:'D'}],vectors:vectors.map(v=>({...v,solutionOnly:true})),axes:false,numbers:false,caption:'ABCD est un parallélogramme ; les sommets sont nommés dans cet ordre.'};
+ return withVectorDiagram(question(`Compléter l’égalité caractérisant le parallélogramme ${tex('ABCD')} : ${tex(left+'=\\ldots')}.`,tex(correct),(first?[vArrow('C','D'),vArrow('A','D'),vArrow('D','A')]:[vArrow('C','B'),vArrow('A','B'),vArrow('B','A')]).map(tex),`Dans un parallélogramme, les côtés opposés correspondent à des vecteurs égaux lorsqu’on respecte leur sens : ${tex(left+'='+correct)}.`),model);
+});
+
+// CHAPITRE 8 : Variations, extrema et signe — 12 capacités.
+function variationModel(){
+ const count=R(1,4),start=R(-5,-3),xs=Array.from({length:count+1},(_,i)=>start+2*i),ys=[R(-3,3)];
+ let direction=pick([-1,1]);const plateau=R(0,3)===0?R(0,count-1):-1;
+ for(let i=0;i<count;i++){ys.push(ys[i]+(i===plateau?0:direction*R(2,5)));if(i!==plateau)direction=-direction}
+ let kind=pick(['linear','smooth']),fn;
+ if(count===3&&plateau<0&&R(0,2)===0){
+  kind='cubic';const h=R(-1,1),offset=R(-2,2),sgn=pick([-1,1]);
+  xs.splice(0,xs.length,h-2,h-1,h+1,h+2);fn=x=>sgn*((x-h)**3-3*(x-h))+offset;
+  ys.splice(0,ys.length,...xs.map(fn));
+ }else fn=x=>{let j=0;while(j<xs.length-2&&x>xs[j+1])j++;const t=(x-xs[j])/(xs[j+1]-xs[j]),u=kind==='linear'?t:t*t*(3-2*t);return ys[j]+(ys[j+1]-ys[j])*u};
+ return {xs,ys,fn,kind,curves:[{fn,lo:xs[0],hi:xs.at(-1)}],xMin:Math.min(xs[0]-1,-1),xMax:Math.max(xs.at(-1)+1,1)};
+}
+function variationTex(xs,ys){return '\\begin{array}{c|'+xs.map(()=>'c').join('')+'}x&'+xs.join('&')+'\\\\\\hline f&'+ys.map((v,i)=>v+(i<ys.length-1?(ys[i+1]===v?'\\longrightarrow':ys[i+1]>v?'\\nearrow':'\\searrow'):'')).join('&')+'\\end{array}'}
+function variationFigure(xs,ys){
+ // Ne conserver que les bornes et les changements de sens.
+ const keep=xs.map((_,i)=>i).filter(i=>i===0||i===xs.length-1||Math.sign(ys[i]-ys[i-1])!==Math.sign(ys[i+1]-ys[i]));
+ xs=keep.map(i=>xs[i]);ys=keep.map(i=>ys[i]);
+ const levels=[0];for(let i=1;i<ys.length;i++)levels.push(levels[i-1]-Math.sign(ys[i]-ys[i-1]));
+ const low=Math.min(...levels),high=Math.max(...levels);
+ const W=440,H=154,L=66,step=(W-L-18)/(xs.length-1),Y=i=>high===low?92:52+80*(levels[i]-low)/(high-low);
+ let body=`<path class="study-rule" d="M8 36H432M51 8V146"/><text x="27" y="25">x</text><text x="25" y="93">𝑓</text>`;
+ xs.forEach((x,i)=>{const px=L+i*step;body+=`<text x="${px}" y="25">${x}</text><text x="${px}" y="${Y(i)+5}">${ys[i]}</text>`;if(i<xs.length-1){const tx=px+step-13,ty=Y(i+1),sx=px+13,sy=Y(i);const angle=Math.atan2(ty-sy,tx-sx),a=7;body+=`<path class="study-arrow" d="M${sx} ${sy}L${tx} ${ty}m${-a*Math.cos(angle-.5)} ${-a*Math.sin(angle-.5)}L${tx} ${ty}l${-a*Math.cos(angle+.5)} ${-a*Math.sin(angle+.5)}"/>`}});
+ return `<figure class="study-table"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Tableau de variations">${body}</svg><figcaption>Tableau de variations de f.</figcaption></figure>`;
+}
+function withVariation(q,p){return {...q,figure:variationFigure(p.xs,p.ys)}}
+function variationDescription(p,reverse=false){return p.xs.slice(0,-1).map((x,i)=>(p.ys[i+1]===p.ys[i]?'Constante':(p.ys[i+1]>p.ys[i])!==reverse?'Croissante':'Décroissante')+' sur '+tex(setTex([interval(x,p.xs[i+1])]))).join(' ; ')}
+for(const [id,name,graph]of [['01','Lire les variations sur une courbe',true],['02','Lire un tableau de variations',false]])add(8,'C8-'+id,name,()=>{
+ const p=variationModel(),j=R(0,p.xs.length-2),d=Math.sign(p.ys[j+1]-p.ys[j]),I=tex(setTex([interval(p.xs[j],p.xs[j+1])])),labels=['Strictement croissante','Strictement décroissante','Constante','Elle change de sens de variation sur cet intervalle'],correct=labels[d===0?2:d>0?0:1];
+ const q=question(`Sur ${I}, quel est le sens de variation de f ?`,correct,labels.filter(v=>v!==correct),d===0?'Les images restent égales sur tout cet intervalle : f est constante. Le tableau utilise une flèche horizontale.':`De gauche à droite, les images ${d>0?'augmentent':'diminuent'}. La fonction est donc ${d>0?'strictement croissante':'strictement décroissante'} sur cet intervalle.`);
+ return graph?withFunctionGraph(q,p):withVariation(q,p);
+});
+add(8,'C8-03','Associer une courbe à ses variations',()=>{
+ const p=variationModel(),wrong=[p.ys.map(v=>v+1),p.xs.map((_,i)=>i),p.xs.map((_,i)=>p.xs.length-1-i)];
+ const q=question('Quel tableau de variations correspond à la courbe ?',tex(variationTex(p.xs,p.ys)),wrong.map(y=>tex(variationTex(p.xs,y))),variationDescription(p)+'. Les valeurs aux bornes et aux changements de sens se lisent sur la courbe.');
+ const choiceFigures={};[p.ys,...wrong].forEach(y=>choiceFigures[readableNotation(tex(variationTex(p.xs,y)))]=variationFigure(p.xs,y));
+ return {...withFunctionGraph(q,p),choiceFigures};
+});
+add(8,'C8-04','Comparer des images avec les variations',()=>{
+ const p=variationModel(),n=p.xs.length-1,j=R(0,n-1),pairs=[];
+ for(let i=0;i<n;i++)for(let k=i+1;k<n;k++){
+  const lo=Math.max(Math.min(p.ys[i],p.ys[i+1]),Math.min(p.ys[k],p.ys[k+1])),hi=Math.min(Math.max(p.ys[i],p.ys[i+1]),Math.max(p.ys[k],p.ys[k+1]));
+  if(lo<hi)pairs.push([i,k]);
+ }
+ const unknown=pairs.length>0&&R(0,3)===0,pair=unknown?pick(pairs):[j,j],a=p.xs[pair[0]]+(p.xs[pair[0]+1]-p.xs[pair[0]])*.25,b=p.xs[pair[1]]+(p.xs[pair[1]+1]-p.xs[pair[1]])*.75;
+ const left=tex('f('+dec(a)+')'),right=tex('f('+dec(b)+')'),choices=[left+' < '+right,left+' > '+right,left+' = '+right,'On ne peut pas conclure avec ce tableau'],d=Math.sign(p.ys[j+1]-p.ys[j]),correct=choices[unknown?3:d===0?2:d>0?0:1];
+ return withVariation(question(`Que permet d’affirmer ce tableau à propos de ${left} et ${right} ?`,correct,choices.filter(v=>v!==correct),unknown?'Les deux abscisses sont sur des portions différentes et les plages possibles des images se recouvrent. Le tableau ne permet pas de les ordonner.':d===0?'Les deux abscisses appartiennent au même palier : leurs images sont égales.':`Sur cette portion, f est strictement ${d>0?'croissante : l’ordre est conservé':'décroissante : l’ordre est inversé'}.`),p);
+});
+for(const [id,name,max]of [['05','Déterminer un maximum et son abscisse',true],['06','Déterminer un minimum et son abscisse',false]])add(8,'C8-'+id,name,()=>{
+ const p=variationModel(),value=(max?Math.max:Math.min)(...p.ys),j=p.ys.indexOf(value),points=p.xs.flatMap((x,i)=>p.ys[i]===value?[interval(x,x)]:[]);
+ for(let i=0;i<p.xs.length-1;i++)if(p.ys[i]===value&&p.ys[i+1]===value)points.push(interval(p.xs[i],p.xs[i+1]));
+ const where=tex(setTex(points)),label=max?'Maximum':'Minimum',correct=`${label} : ${value}, atteint pour `+tex('x\\in '+setTex(points));
+ const wrong=[value-1,value+1,value+2].map(v=>`${label} : ${v}, atteint pour `+tex('x\\in '+setTex(points)));
+ const q=question(`Quel est le ${max?'maximum':'minimum'} de f sur tout le domaine représenté, et où est-il atteint ?`,correct,wrong,`Le ${max?'plus haut':'plus bas'} niveau atteint est ${value}. L’ensemble des abscisses où il est atteint est ${where}, y compris tout palier éventuel.`);
+ return R(0,1)?withVariation(q,p):withFunctionGraph(q,{...p,guides:p.xs.flatMap((x,i)=>p.ys[i]===value?[{x,y:value,horizontal:true}]:[])});
+});
+add(8,'C8-07','Encadrer une image avec un tableau',()=>{
+ const p=variationModel(),j=R(0,p.xs.length-2),lo=Math.min(p.ys[j],p.ys[j+1]),hi=Math.max(p.ys[j],p.ys[j+1]),correct=tex(lo+'\\leq f(x)\\leq '+hi);
+ return withVariation(question(`Pour ${tex('x\\in '+setTex([interval(p.xs[j],p.xs[j+1])]))}, quel est l’encadrement le plus précis fourni par ce tableau ?`,correct,[tex((lo-1)+'\\leq f(x)\\leq '+(hi+1)),tex((lo-2)+'\\leq f(x)\\leq '+(hi+2)),tex((lo-3)+'\\leq f(x)\\leq '+(hi+3))],`Sur cet intervalle, f est monotone et ses valeurs aux bornes sont ${p.ys[j]} et ${p.ys[j+1]}. Donc ${correct}.`),p);
+});
+function signModel(){const a=R(-3,-1),b=R(1,3),sign=pick([-1,1]),lo=a-1,hi=b+1,kind=R(0,2),fn=x=>kind===0?sign*(x-a)*(x-b)/2:kind===1?sign*(x-a)*(x-b)*(1+(x-a)**2/16)/3:x<a?sign*(a-x):x>b?sign*(x-b):-sign*Math.min(x-a,b-x,1);return {a,b,sign,lo,hi,fn,curves:[{fn,lo,hi,lc:true,rc:true}],xMin:lo-1,xMax:hi+1}}
+function signTex(p,sgn=p.sign){return '\\begin{array}{c|ccccccc}x&'+p.lo+'&&'+p.a+'&&'+p.b+'&&'+p.hi+'\\\\\\hline \\text{signe de }f(x)&&'+(sgn>0?'+':'-')+'&\\underset{\\vert}{\\overset{\\vert}{0}}&'+(sgn>0?'-':'+')+'&\\underset{\\vert}{\\overset{\\vert}{0}}&'+(sgn>0?'+':'-')+'&\\end{array}'}
+function signFigure(p){
+ const xs=[76,186,304,414],ys=[p.lo,p.a,p.b,p.hi];
+ let body='<path fill="none" stroke="#73858c" stroke-width="1" d="M8 38H432M53 8V105M186 38V105M304 38V105"/><text x="27" y="27">x</text><text x="27" y="68" style="font-size:12px">signe de</text><text x="27" y="85">𝑓(𝑥)</text>';
+ xs.forEach((x,i)=>body+=`<text x="${x}" y="27">${ys[i]}</text>`);
+ [186,304].forEach(x=>body+=`<rect x="${x-9}" y="60" width="18" height="24" fill="white"/><text x="${x}" y="78">0</text>`);
+ [131,245,359].forEach((x,i)=>body+=`<text x="${x}" y="78">${(i===1?-p.sign:p.sign)>0?'+':'−'}</text>`);
+ return `<figure class="study-table"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 112" role="img" aria-label="Tableau de signes">${body}</svg></figure>`;
+}
+function signSolutions(p,positive,strict){const inside=positive?p.sign<0:p.sign>0;return inside?[interval(p.a,p.b,!strict,!strict)]:[interval(p.lo,p.a,true,!strict),interval(p.b,p.hi,!strict,true)]}
+function signQuestion(p,prompt,positive,strict){const result=signSolutions(p,positive,strict);return intervalQuestion(prompt,result,[signSolutions(p,!positive,strict),signSolutions(p,positive,!strict),[],[interval(p.lo,p.hi)]],`On retient les abscisses où ${positive?'f est positive':'f est négative'}${strict?' strictement : les zéros sont exclus':', en incluant les zéros'}. Sur le domaine représenté, ${tex('S='+setTex(result))}.`)}
+add(8,'C8-08','Lire le signe sur une courbe',()=>{const p=signModel(),positive=!!R(0,1),strict=!!R(0,1);return withFunctionGraph(signQuestion(p,`Pour quelles abscisses la fonction f est-elle ${positive?'positive':'négative'}${strict?' strictement':' ou nulle'} ?`,positive,strict),{...p,horizontal:[0],guides:[{x:p.a,y:0},{x:p.b,y:0}]})});
+add(8,'C8-09','Lire un tableau de signes',()=>{const p=signModel(),positive=!!R(0,1),strict=!!R(0,1),q=signQuestion(p,`À l’aide du tableau, résoudre ${tex('f(x)'+(positive?(strict?'>':'\\geq '):(strict?'<':'\\leq '))+'0')}.`,positive,strict);return {...q,figure:signFigure(p)}});
+add(8,'C8-10','Associer une courbe à son tableau de signes',()=>{
+ const p=signModel(),correct=tex(signTex(p));return withFunctionGraph(question('Quel tableau de signes correspond à cette courbe ?',correct,[tex(signTex(p,-p.sign)),tex(signTex({...p,a:p.a-1,b:p.b-1})),tex(signTex({...p,a:p.a+1,b:p.b+1}))],`La courbe coupe l’axe des abscisses en ${p.a} et ${p.b}. Elle est ${p.sign>0?'au-dessus à l’extérieur des deux zéros et en dessous entre eux':'en dessous à l’extérieur des deux zéros et au-dessus entre eux'}.`),p);
+});
+add(8,'C8-11','Résoudre graphiquement f(x) comparé à k',()=>{
+ const p=signModel(),k=pick([-2,-1,1,2]),positive=!!R(0,1),strict=!!R(0,1),fn=x=>p.fn(x)+k,relation=positive?(strict?'>':'\\geq '):(strict?'<':'\\leq '),q=signQuestion(p,`Résoudre graphiquement ${tex('f(x)'+relation+k)} sur le domaine représenté.`,positive,strict);
+ q.explanation=`On compare la courbe à la droite horizontale ${tex('y='+k)}. On garde les abscisses où la courbe est ${positive?'au-dessus':'en dessous'}${strict?' strictement ; les intersections sont exclues':' ou sur cette droite ; les intersections sont incluses'}. ${tex('S='+setTex(signSolutions(p,positive,strict)))}.`;
+ return withFunctionGraph(q,{...p,curves:[{fn,lo:p.lo,hi:p.hi}],focusY:[k],horizontal:[k],guides:[{x:p.a,y:k},{x:p.b,y:k}]});
+});
+add(8,'C8-12','Résoudre graphiquement f(x) comparé à g(x)',()=>{
+ const p=signModel(),m=R(-1,1),b=R(-2,2),g=x=>m*x+b,f=x=>g(x)+p.fn(x),positive=!!R(0,1),strict=!!R(0,1),relation=positive?(strict?'>':'\\geq '):(strict?'<':'\\leq '),q=signQuestion(p,`Résoudre graphiquement ${tex('f(x)'+relation+'g(x)')} sur le domaine représenté.`,positive,strict);
+ q.explanation=`La courbe de f est le trait plein bleu ; celle de g est le trait orange en tirets. On retient les abscisses où f est ${positive?'au-dessus':'en dessous'} de g${strict?' strictement, en excluant les intersections':', en incluant les intersections'}. ${tex('S='+setTex(signSolutions(p,positive,strict)))}.`;
+ return withFunctionGraph(q,{...p,curves:[{fn:f,lo:p.lo,hi:p.hi},{fn:g,lo:p.lo,hi:p.hi}],guides:[{x:p.a,y:g(p.a)},{x:p.b,y:g(p.b)}]});
+});
+
+// Suivi local des compétences : seules les réponses aux QCM sont comptées.
+const PROGRESS_KEY='automaths.progress.v1';
+let storageAvailable=true;
+function loadProgress(){
+ try{
+  const data=JSON.parse(localStorage.getItem(PROGRESS_KEY)||'null');
+  if(!data||data.version!==1||!data.skills)return {};
+  const clean={};
+  families.forEach(f=>{
+   const a=data.skills[f.id];if(!a||!Array.isArray(a.recent))return;
+   const recent=a.recent.filter(v=>typeof v==='boolean').slice(-5);
+   const attempts=Number.isSafeInteger(a.attempts)&&a.attempts>=recent.length?a.attempts:recent.length;
+   const successes=Number.isSafeInteger(a.successes)&&a.successes>=0&&a.successes<=attempts?a.successes:recent.filter(Boolean).length;
+   clean[f.id]={recent,attempts,successes};
+  });return clean;
+ }catch(e){storageAvailable=false;return {}}
+}
+let skillProgress=loadProgress();
+function skillState(id){
+ const a=skillProgress[id]||{recent:[],attempts:0,successes:0};
+ const percent=a.recent.filter(Boolean).length*20;
+ return {...a,percent,mastered:percent===100};
+}
+function saveProgress(){
+ try{localStorage.setItem(PROGRESS_KEY,JSON.stringify({version:1,skills:skillProgress}));storageAvailable=true}
+ catch(e){storageAvailable=false}
+ updateStorageNotice();updateHomeProgress();
+}
+function recordSkill(id,ok){
+ const a=skillState(id);
+ skillProgress[id]={recent:[...a.recent,ok].slice(-5),attempts:a.attempts+1,successes:a.successes+(ok?1:0)};
+ saveProgress();
+}
+function updateStorageNotice(){
+ const notice=document.getElementById('storageNotice');
+ notice.classList.toggle('hidden',storageAvailable);
+ notice.textContent=storageAvailable?'':'L’enregistrement est indisponible dans ce navigateur. Ta progression est conservée pendant cette session uniquement.';
+}
+function practiceWeight(id){
+ const a=skillState(id);
+ if(a.mastered)return 1;
+ if(!a.attempts)return 4;
+ return 5+(100-a.percent)/20+(a.recent.at(-1)===false?3:0);
+}
+function weightedFamily(pool,used={}){
+ const weights=pool.map(f=>practiceWeight(f.id)/(1+2*(used[f.id]||0)));
+ let draw=Math.random()*weights.reduce((a,b)=>a+b,0);
+ for(let i=0;i<pool.length;i++){draw-=weights[i];if(draw<0)return pool[i]}
+ return pool.at(-1);
+}
+let currentMode='quiz',currentPaperView='exercise';
+let series=[],idx=0,score=0,log=[],answered=false,quizTotal=0,quizPool=[],quizPlan=[],quizUsed={},returnFromSkills=[];
+const el=id=>document.getElementById(id);
+function renderMath(){if(window.MathJax?.typesetPromise){MathJax.typesetPromise().catch(()=>{})}}
+function functionExactFractions(text){
+ return text.replace(/\\\(([\s\S]*?)\\\)/g,(_,math)=>tex(math.replace(/(-?\d+)\{,\}(\d+)/g,(_,whole,digits)=>{
+  const denominator=10**digits.length,numerator=Number(whole)*denominator+(whole.startsWith('-')?-1:1)*Number(digits);
+  let a=Math.abs(numerator),b=denominator;while(b){const r=a%b;a=b;b=r}
+  const n=numerator/a,d=denominator/a;return d===1?String(n):(n<0?'-':'')+'\\frac{'+Math.abs(n)+'}{'+d+'}';
+ })));
+}
+function mathFunctionNames(text){return text.split(/(\\\([\s\S]*?\\\))/g).map((part,i)=>i%2?part:part.replace(/\bf\b/g,()=>tex('f')).replace(/\bg\b/g,()=>tex('g'))).join('')}
+function generate(f){for(let t=0;t<50;t++){try{let q=f.fn();if(f.c===6||f.c===8)q={...q,q:mathFunctionNames(q.q)};if(f.c===6){q={...q,q:functionExactFractions(q.q),correct:functionExactFractions(q.correct),choices:q.choices.map(functionExactFractions),explanation:functionExactFractions(q.explanation)}}if(q.choices.length===4&&new Set(q.choices).size===4&&q.choices.includes(q.correct))return {...q,id:f.id,name:f.name,c:f.c}}catch(e){}}throw Error('Impossible de générer cette question. Relance la série.')}
+function showOnly(id){if(id==='setup')updateHomeProgress();['setup','quiz','result','paper','skills'].forEach(v=>el(v).classList.toggle('hidden',v!==id))}
+function beginQuiz(pool,total){
+ quizPool=pool;quizTotal=total;series=[];idx=0;score=0;log=[];quizUsed={};
+ const chapters=shuffle([...new Set(pool.map(f=>f.c))]);
+ quizPlan=Array.from({length:total},(_,i)=>chapters[i%chapters.length]);
+ appendQuizQuestion();showOnly('quiz');show();
+}
+function appendQuizQuestion(){
+ const pool=quizPool.filter(f=>f.c===quizPlan[series.length]);
+ const f=weightedFamily(pool,quizUsed);
+ series.push(generate(f));quizUsed[f.id]=(quizUsed[f.id]||0)+1;
+}
+function start(){
+ const chosen=[...document.querySelectorAll('.chapter:checked')].map(x=>Number(x.value)),total=Number(el('total').value);
+ if(!chosen.length){el('setupError').textContent='Sélectionne au moins un chapitre.';return}
+ el('setupError').textContent='';
+ try{
+  if(currentMode!=='paper'){beginQuiz(families.filter(f=>chosen.includes(f.c)),total);return}
+  const order=shuffle(chosen),selected=[];
+  for(let i=0;i<total;i++){
+   const c=order[i%order.length];
+   let available=families.filter(f=>f.c===c&&!['C1-03','C2-02'].includes(f.id)&&!selected.some(s=>s.id===f.id));
+   if(!available.length)available=families.filter(f=>f.c===c&&!['C1-03','C2-02'].includes(f.id));
+   selected.push(pick(available));
+  }
+  series=selected.map(generate);showOnly('paper');currentPaperView='exercise';updatePaperPreview();
+ }catch(e){showOnly('setup');el('setupError').textContent=e.message}
+}
+function show(){
+ answered=false;const q=series[idx];
+ el('progress').textContent=`Question ${idx+1} / ${quizTotal}`;
+ updateQuizProgress(false);
+ el('prompt').textContent=q.q;el('questionFigure').innerHTML=q.figure||'';el('feedback').textContent='';el('next').classList.add('hidden');
+ el('next').textContent=idx===quizTotal-1?'Voir le résultat':'Question suivante';
+ el('answers').innerHTML='';
+ q.choices.forEach((v,i)=>{const b=document.createElement('button');b.className='option';b.innerHTML=`<strong>${'ABCD'[i]}.</strong> ${q.choiceFigures?.[v]||escapeHtml(v)}`;b.onclick=()=>answer(v);el('answers').appendChild(b)});
+ renderMath();
+}
+function answer(v){
+ if(answered)return;answered=true;
+ const q=series[idx],ok=v===q.correct;if(ok)score++;
+ log.push({id:q.id,ok});recordSkill(q.id,ok);updateQuizProgress(true);
+ [...el('answers').children].forEach((b,i)=>{b.disabled=true;if(q.choices[i]===q.correct)b.classList.add('good');else if(q.choices[i]===v)b.classList.add('bad')});
+ el('feedback').innerHTML=(ok?'Bonne réponse ! ':'À revoir. ')+escapeHtml(q.explanation)+(q.diagram||'');
+ el('next').classList.remove('hidden');renderMath();
+}
+function next(){
+ if(!answered)return;
+ idx++;
+ if(idx<quizTotal){
+  try{appendQuizQuestion();show()}catch(e){showOnly('setup');el('setupError').textContent=e.message}return;
+ }
+ showOnly('result');el('score').textContent=`${score} / ${quizTotal} (${Math.round(score/quizTotal*100)} %)`;
+ const count=new Set(log.filter(x=>!x.ok).map(x=>x.id)).size;
+ el('details').textContent=count?`${count} compétence${count>1?'s':''} à retravailler dans cette série.`:'Toutes les réponses de cette série sont correctes !';
+ el('reviewErrors').classList.toggle('hidden',count===0);
+}
+function startPractice(pool,total=Number(el('total').value)){
+ if(!pool.length)return;
+ try{beginQuiz(pool,total)}catch(e){showOnly('setup');el('setupError').textContent=e.message}
+}
+function weakFamilies(chapter){return families.filter(f=>(!chapter||f.c===chapter)&&skillState(f.id).attempts>0&&!skillState(f.id).mastered)}
+function openSkills(){
+ if(!el('skills').classList.contains('hidden'))return;
+ returnFromSkills=['setup','quiz','result','paper'].filter(id=>!el(id).classList.contains('hidden'));
+ renderSkills();showOnly('skills');el('skillsTitle').focus();
+}
+function closeSkills(){
+ const previous=returnFromSkills[0]||'setup';showOnly(previous);el('openSkills').focus();
+}
+function renderSkills(){
+ const mastered=families.filter(f=>skillState(f.id).mastered).length;
+ const seen=families.filter(f=>skillState(f.id).attempts>0).length;
+ const weak=weakFamilies();
+ el('skillsSummary').textContent=`${mastered} / ${families.length} compétences acquises · ${weak.length} à retravailler · ${families.length-seen} non abordées`;
+ el('reviewWeak').disabled=!weak.length;
+ el('skillChapters').innerHTML=Object.entries(chapterLabels).map(([chapter,label])=>{
+  const list=families.filter(f=>f.c===Number(chapter));
+  const acquired=list.filter(f=>skillState(f.id).mastered).length;
+  const average=Math.round(list.reduce((sum,f)=>sum+skillState(f.id).percent,0)/list.length);
+  const rows=list.map(f=>{
+   const a=skillState(f.id);
+   const color=!a.attempts?'#94a3b8':a.mastered?'#16803a':a.percent>=80?'#2563eb':a.percent>=40?'#b45309':'#c2413c';
+   const label=!a.attempts?'Non abordée':a.mastered?'Acquise':a.recent.at(-1)===false?'À retravailler':'En cours';
+   const detail=a.attempts?`${a.recent.filter(Boolean).length} réussite(s) ${a.attempts<5?'sur un objectif de 5':'parmi les 5 dernières réponses'} · ${a.attempts} tentative(s)`:'Réponds à une première question pour commencer.';
+   return `<article class="skill-card"><div class="skill-heading"><span class="skill-name">${escapeHtml(f.name)}</span><span class="skill-value" style="color:${color}">${a.percent} %</span></div><div class="skill-bar" role="progressbar" aria-label="${escapeHtml(f.name)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${a.percent}" aria-valuetext="${a.percent} % — ${label}"><div class="skill-fill" style="width:${a.percent}%;--skill-color:${color}"></div></div><div class="skill-meta"><small><strong>${label}</strong><br>${detail}</small><button type="button" class="skill-practice" data-skill="${f.id}" aria-label="S’entraîner : ${escapeHtml(f.name)}">S’entraîner</button></div></article>`;
+  }).join('');
+  return `<details class="chapter-card" ${chapter==='1'?'open':''}><summary><span class="chapter-summary-content"><span class="chapter-summary-icon">${chapterLogo(chapter)}</span><span>Chapitre ${chapter} — ${escapeHtml(label)}<span class="chapter-average">${acquired} / ${list.length} compétences acquises · Progression moyenne : ${average} %</span></span></span></summary><div class="chapter-body"><div class="toolbar"><button type="button" data-practice-chapter="${chapter}">Entraîner ce chapitre</button></div>${rows}</div></details>`;
+ }).join('');
+}
+el('start').onclick=start;el('next').onclick=next;el('restart').onclick=()=>showOnly('setup');
+el('openSkills').onclick=openSkills;el('setupSkills').onclick=openSkills;el('resultSkills').onclick=openSkills;el('closeSkills').onclick=closeSkills;
+el('reviewWeak').onclick=()=>startPractice(weakFamilies());
+el('reviewErrors').onclick=()=>{const ids=new Set(log.filter(x=>!x.ok).map(x=>x.id));startPractice(families.filter(f=>ids.has(f.id)))};
+el('skillChapters').onclick=event=>{
+ const button=event.target.closest('button');if(!button)return;
+ if(button.dataset.skill)startPractice(families.filter(f=>f.id===button.dataset.skill),5);
+ else if(button.dataset.practiceChapter)startPractice(families.filter(f=>f.c===Number(button.dataset.practiceChapter)));
+};
+window.addEventListener('storage',event=>{if(event.key===PROGRESS_KEY){skillProgress=loadProgress();updateHomeProgress();if(!el('skills').classList.contains('hidden'))renderSkills()}});
+updateStorageNotice();
+
+function updateHomeProgress(){
+ for(let c=1;c<=8;c++){
+  const list=families.filter(f=>f.c===c);
+  const seen=list.some(f=>skillState(f.id).attempts>0);
+  const acquired=list.filter(f=>skillState(f.id).mastered).length;
+  const percent=Math.round(list.reduce((sum,f)=>sum+skillState(f.id).percent,0)/list.length);
+  el('homePercent'+c).textContent=seen?percent+' %':'À découvrir';
+  el('homeCaption'+c).textContent=acquired+' / '+list.length+' compétences acquises';
+  el('homeTrack'+c).setAttribute('aria-valuenow',String(percent));
+  el('homeTrack'+c).setAttribute('aria-valuetext',seen?percent+' % de progression':'Chapitre à découvrir');
+  el('homeFill'+c).style.width=percent+'%';
+  el('homeFill'+c).style.background=percent===100?'linear-gradient(90deg,#46d187,#23b970)':'';
+ }
+}
+function updateQuizProgress(completed){
+ const percent=Math.round((idx+(completed?1:0))/quizTotal*100);
+ el('quizFill').style.width=percent+'%';el('quizMeter').setAttribute('aria-valuenow',String(percent));
+ el('sessionScore').textContent=score+' bonne'+(score>1?'s':'')+' réponse'+(score>1?'s':'');
+}
+updateHomeProgress();
+</script><script>document.querySelectorAll(".count-btn").forEach(btn=>btn.addEventListener("click",()=>{document.getElementById("total").value=btn.dataset.count;document.querySelectorAll(".count-btn").forEach(b=>{let active=b===btn;b.classList.toggle("active",active);b.setAttribute("aria-pressed",String(active));});}));</script><script>
+// ---- AutoMaths : fiches imprimables et aperçu A4 -----------------------
+const chapterLabels={1:'Ensembles et puissances',2:'Repérage',3:'Calcul littéral et racines',4:'Information chiffrée',5:'Valeurs absolues, intervalles et encadrement',6:'Généralités sur les fonctions',7:'Vecteurs — Partie 1',8:'Variations, extrema et signe'};
+const escapeHtml=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function printTitle(){return (el('sheetTitle').value.trim()||'AutoMaths — Automatismes de Seconde').slice(0,100)}
+function responseHeight(){return {compact:12,normal:39,large:64}[el('answerSpace').value]||22}
+function worksheetBody(solution){
+ const ch=[...new Set(series.map(q=>q.c))].sort((a,b)=>a-b);
+ const subtitle='Classe de Seconde — '+ch.map(i=>'Chapitre '+i).join(' · ')+' — '+series.length+' questions';
+ const header=`<header class="sheet-heading"><div><h2>${escapeHtml(printTitle())}${solution?' — Corrigé':''}</h2><div class="sheet-sub">${escapeHtml(subtitle)}</div></div><div class="sheet-sub">AutoMaths</div></header>`;
+ const name=(!solution&&el('showName').checked)?'<div class="sheet-name">Nom : ....................................... Prénom : ....................................... Classe : ............</div><div style="height:14px"></div>':'';
+ const questions=series.map((q,i)=>{
+  const method=solution?`<div class="sheet-correction"><div class="answer">Réponse : ${q.choiceFigures?.[q.correct]||escapeHtml(q.correct)}</div><div class="method">${escapeHtml(q.explanation)}</div>${q.diagram||''}</div>`:`<div class="ans" style="height:${responseHeight()}px"></div>`;
+  return `<article class="sheet-question"><div><strong>${i+1}.</strong> ${escapeHtml(q.q)}</div>${q.figure||''}${method}</article>`
+ }).join('');
+ return header+name+`<div class="sheet-columns">${questions}</div>`;
+}
+async function typeset(node){if(window.MathJax?.typesetPromise){try{await MathJax.typesetPromise([node])}catch(e){console.warn(e)}}}
+async function updatePaperPreview(){
+ el('paperCount').textContent=series.length+' questions';
+ el('previewExercise').classList.toggle('active',currentPaperView==='exercise');
+ el('previewSolution').classList.toggle('active',currentPaperView==='solution');
+ const root=el('paperPreview');root.innerHTML=worksheetBody(currentPaperView==='solution');
+ await typeset(root);
+}
+async function printWorksheet(solution){
+ const root=el('printDocument');root.innerHTML='<div class="a4-sheet">'+worksheetBody(solution)+'</div>';
+ await typeset(root);el('paperStatus').textContent='Dans la fenêtre d’impression : destination « Enregistrer au format PDF », papier A4.';
+ window.print();
+}
+function setMode(mode){
+ currentMode=mode;document.querySelectorAll('.mode-btn').forEach(b=>{let yes=b.dataset.mode===mode;b.classList.toggle('active',yes);b.setAttribute('aria-pressed',String(yes))});
+ el('paperOptions').classList.toggle('hidden',mode!=='paper');
+ el('start').textContent=mode==='paper'?'Générer la fiche':'Commencer ma série';
+}
+document.querySelectorAll('.mode-btn').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.mode)));
+el('previewExercise').onclick=()=>{currentPaperView='exercise';updatePaperPreview()};
+el('previewSolution').onclick=()=>{currentPaperView='solution';updatePaperPreview()};
+el('pdfExercise').onclick=()=>printWorksheet(false);
+el('pdfSolution').onclick=()=>printWorksheet(true);
+el('paperBack').onclick=()=>{el('paper').classList.add('hidden');el('setup').classList.remove('hidden');el('printDocument').innerHTML=''};
+el('paperNew').onclick=()=>{el('paper').classList.add('hidden');el('setup').classList.remove('hidden');start()};
 </script></body></html>
