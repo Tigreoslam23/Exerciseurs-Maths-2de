@@ -311,10 +311,20 @@ add(3,'C3-08','Factorisation remarquable',()=>{let a=R(2,6),b=R(2,8);return ques
 add(3,'C3-09','Somme de fractions',()=>{let d=R(3,9),a=R(1,d-1),b=R(1,d-1);return question(`${tex(frac(a,d)+'+'+frac(b,d))} = ?`,tex(frac(a+b,d)),[tex(frac(a+b,2*d)),tex(frac(a*b,d)),tex(frac(a+b,d*d))],'Même dénominateur : on additionne les numérateurs.')});
 add(3,'C3-10','Produit de fractions',()=>{let a=R(2,8),b=R(3,9),c=R(2,8),d=R(3,9);return question(`${tex(frac(a,b)+'\\times '+frac(c,d))} = ?`,tex(frac(a*c,b*d)),[tex(frac(a+c,b+d)),tex(frac(a*c,b+d)),tex(frac(a+c,b*d))],'On multiplie les numérateurs et les dénominateurs.')});
 add(3,'C3-11','Valeur interdite',()=>{let a=R(2,9);return question(`Pour ${tex(frac('1',`x-${a}`))}, quelle valeur de x est interdite ?`,tex(String(a)),[tex(String(-a)),tex('0'),tex(String(a+1))],'Un dénominateur ne peut pas être nul.')});
-add(3,'C3-12','Comparer par différence',()=>{let a=R(2,8),b=R(1,a-1);return question(`Pour ${tex('x>0')}, comparer ${tex(`${a}x+1`)} et ${tex(`${b}x+1`)}.`, 'La première expression est supérieure',['La deuxième expression est supérieure','Elles sont égales','On ne peut pas conclure'],`La différence vaut (${a}-${b})x=${a-b}x>0 puisque x>0.`)});
 add(3,'C3-13','Simplifier une racine',()=>{let a=R(2,9),b=pick([2,3,5,7]);return question(`Simplifier ${tex(`\\sqrt{${a*a*b}}`)}.`,tex(`${a}\\sqrt{${b}}`),[tex(`${a*a}\\sqrt{${b}}`),tex(`${a}\\sqrt{${a*b}}`),tex(`\\sqrt{${a*b}}`)],'Extraire le facteur carré parfait.')});
 add(3,'C3-14','Produit de racines',()=>{let a=R(2,9),b=R(2,9);return question(`${tex(`\\sqrt{${a}}\\times\\sqrt{${b}}`)} = ?`,tex(`\\sqrt{${a*b}}`),[tex(`\\sqrt{${a+b}}`),tex(`${a*b}`),tex(`\\sqrt{${a}}+\\sqrt{${b}}`)],'Le produit de racines positives est la racine du produit.')});
-add(3,'C3-15','Calcul avec des racines',()=>{let a=R(2,8),b=R(2,8),c=pick([2,3,5,7]);return question(`${tex(`${a}\\sqrt{${c}}+${b}\\sqrt{${c}}`)} = ?`,tex(`${a+b}\\sqrt{${c}}`),[tex(`${a*b}\\sqrt{${c}}`),tex(`${a+b}\\sqrt{${2*c}}`),tex(`${a+b+c}`)],'On additionne les coefficients des mêmes racines.')});
+const radicalTerm=(k,d)=>k===0?'0':`${k===1?'':k===-1?'-':k}\\sqrt{${d}}`;
+add(3,'C3-15','Somme et différence de racines',()=>{
+ const a=R(2,8),sign=pick([-1,1]),b=pick([1,2,3,4,5,6,7,8,9].filter(v=>sign===1||v!==a)),d=2,k=a+sign*b;
+ const candidates=[1+sign*b,a-sign*b,a*a+sign*b,-k,a+b+1,a-b-1];
+ const wrong=[...new Set(candidates.filter(v=>v!==k))].slice(0,3).map(v=>tex(radicalTerm(v,d)));
+ const operation=sign===1?'+':'-';
+ return question(`Écrire ${tex(`\\sqrt{${a*a*d}}${operation}${radicalTerm(b,d)}`)} sous la forme ${tex('k\\sqrt{2}')} avec ${tex('k\\in\\mathbb Z')}.`,tex(radicalTerm(k,d)),wrong,`On extrait le carré parfait : ${tex(`\\sqrt{${a*a*d}}=\\sqrt{${a*a}\\times ${d}}=${radicalTerm(a,d)}`)}. Puis ${tex(`${radicalTerm(a,d)}${operation}${radicalTerm(b,d)}=${radicalTerm(k,d)}`)}.`);
+});
+add(3,'C3-16','Quotient de racines',()=>{
+ const a=R(2,8),d=pick([2,3,5,7]);
+ return question(`Simplifier ${tex(frac(`\\sqrt{${a*a*d}}`,`\\sqrt{${d}}`))}.`,tex(String(a)),[tex(String(a-1)),tex(String(a+1)),tex(String(a*d))],`Le dénominateur est strictement positif. ${tex(`${frac(`\\sqrt{${a*a*d}}`,`\\sqrt{${d}}`)}=\\sqrt{${frac(a*a*d,d)}}=\\sqrt{${a*a}}=${a}`)}.`);
+});
 
 // CHAPITRE 4 : Information chiffrée — 13 familles
 const pct=x=>`${x}\\%`,dec=x=>String(Math.round(x*10000)/10000).replace('.', '{,}'), euro=x=>`${dec(x)}\\,\\text{€}`;
