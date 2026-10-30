@@ -144,6 +144,7 @@ button:focus-visible,summary:focus-visible{outline:3px solid #60a5fa;outline-off
 .axis-segment{stroke:currentColor;stroke-width:4;stroke-linecap:round}.axis-b .axis-segment{stroke-dasharray:6 4}
 .axis-result .axis-segment{stroke-width:5}
 .axis-arrow{fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.axis-distance-arrow{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.axis-center{fill:currentColor;stroke:white;stroke-width:1}.axis-distance-label{fill:#203d47;font:600 12px system-ui,sans-serif}
 .axis-bracket{fill:none;stroke:currentColor;stroke-width:2.3;stroke-linejoin:miter}.axis-name{fill:currentColor;font:700 14px system-ui,sans-serif}.axis-number{fill:#203d47;font:14px system-ui,sans-serif}.axis-empty{fill:#203d47;font:13px system-ui,sans-serif}
 #questionFigure:empty{display:none}#questionFigure .axis-figure{margin-top:-4px;margin-bottom:22px}
 @media screen{.feedback .axis-figure{background:#fff;border-radius:12px;padding:8px 10px}.sheet-correction .axis-figure{margin:9px 0}.sheet-correction .axis-figure figcaption{font-size:9px}}
@@ -296,9 +297,9 @@ add(2,'C2-03','Coordonnées du milieu',()=>{let x=R(-5,5),y=R(-5,5),u=R(1,4),v=R
 add(2,'C2-04','Extrémité connaissant le milieu',()=>{let x=R(-5,5),y=R(-5,5),u=R(1,4),v=R(1,4);return question(`Si ${tex(`I(${x};${y})`)} est le milieu de ${tex(`A(${x-u};${y-v})`)} et ${tex('B')}, quelles sont les coordonnées de B ?`,tex(`(${x+u};${y+v})`),[tex(`(${u};${v})`),tex(`(${x-u};${y-v})`),tex(`(${2*x-u};${2*y-v})`)],`x_B=2 × ${x}-(${x-u})=${x+u} et y_B=2 × ${y}-(${y-v})=${y+v}.`)});
 add(2,'C2-05','Distance entre deux points',()=>{let a=pick([[3,4,5],[5,12,13],[6,8,10],[8,15,17]]),x=R(-4,4),y=R(-4,4);return question(`Distance entre ${tex(`A(${x};${y})`)} et ${tex(`B(${x+a[0]};${y+a[1]})`)} dans un repère orthonormé ?`,tex(String(a[2])),[tex(String(a[0]+a[1])),tex(String(a[2]**2)),tex(String(Math.abs(a[1]-a[0])))],`AB² = (${a[0]})² + (${a[1]})² = ${a[2]**2}, donc AB = ${a[2]}.`)});
 add(2,'C2-06','Formule de distance',()=>question(`Dans un repère orthonormé, ${tex('AB^2')} est égal à :`,tex('(x_B-x_A)^2+(y_B-y_A)^2'),[tex('(x_B+x_A)^2+(y_B+y_A)^2'),tex('(x_B-x_A)+(y_B-y_A)'),tex('(x_B-x_A)^2-(y_B-y_A)^2')],'On additionne les carrés des différences de coordonnées.'));
-add(2,'C2-07','Parallélogramme et milieux',()=>{let a=R(-4,4),b=R(-4,4);return question(`Les diagonales d’un quadrilatère ABCD ont le même milieu ${tex(`I(${a};${b})`)}. Quelle conclusion ?`, 'ABCD est un parallélogramme',['ABCD est forcément un rectangle','ABCD est forcément un losange','ABCD est forcément un carré'],'Les diagonales ont le même milieu : ABCD est donc un parallélogramme.')});
+add(2,'C2-07','Parallélogramme et milieux',()=>{let a=R(-4,4),b=R(-4,4);return question(`Les diagonales du quadrilatère ABCD ont le même milieu ${tex(`I(${a};${b})`)}. Quelle est la nature de ABCD ?`, 'ABCD est un parallélogramme',['ABCD est forcément un rectangle','ABCD est forcément un losange','ABCD est forcément un carré'],'Les diagonales ont le même milieu : ABCD est donc un parallélogramme.')});
 add(2,'C2-08','Triangle rectangle',()=>{let a=pick([[3,4,5],[5,12,13],[6,8,10]]);return question(`Un triangle ABC vérifie ${tex(`AB=${a[0]},\\ AC=${a[1]},\\ BC=${a[2]}`)}. Quelle est sa nature ?`,'Rectangle en A',['Rectangle en B','Isocèle en A','Équilatéral'],`AB²+AC²=${a[0]**2}+${a[1]**2}=${a[2]**2}=BC², donc ABC est rectangle en A.`)});
-add(2,'C2-09','Nature d’un quadrilatère',()=>{let kind=pick(['losange','rectangle','carré']);let statement={losange:'ABCD est un parallélogramme dont deux côtés consécutifs ont la même longueur.',rectangle:'ABCD est un parallélogramme possédant un angle droit.',carré:'ABCD est un rectangle dont deux côtés consécutifs ont la même longueur.'};return question(statement[kind],kind==='carré'?'Carré':kind==='rectangle'?'Rectangle':'Losange',['Parallélogramme quelconque','Rectangle','Losange','Carré'].filter(x=>x.toLowerCase()!==kind),`On utilise la propriété caractéristique adaptée.`)});
+add(2,'C2-09','Nature d’un quadrilatère',()=>{let kind=pick(['losange','rectangle','carré']);let statement={losange:'ABCD est un parallélogramme dont deux côtés consécutifs ont la même longueur.',rectangle:'ABCD est un parallélogramme possédant un angle droit.',carré:'ABCD est un rectangle dont deux côtés consécutifs ont la même longueur.'};return question(statement[kind]+' Quelle est la nature précise du quadrilatère ABCD ?',kind==='carré'?'Carré':kind==='rectangle'?'Rectangle':'Losange',['Parallélogramme quelconque','Rectangle','Losange','Carré'].filter(x=>x.toLowerCase()!==kind),`On utilise la propriété caractéristique adaptée.`)});
 // CHAPITRE 3 : 15 familles
 add(3,'C3-01','Distributivité simple',()=>{let a=R(2,9),b=R(2,8),c=R(1,8);return question(`Développer ${tex(`${a}(${b}x+${c})`)}.`,tex(`${a*b}x+${a*c}`),[tex(`${a*b}x+${c}`),tex(`${a+b}x+${a*c}`),tex(`${a*b}x+${a+c}`)],'On distribue le facteur à chacun des termes.')});
 add(3,'C3-02','Double distributivité',()=>{let a=R(1,4),b=R(1,8),c=R(1,4),d=R(1,8),k=a*d+b*c;return question(`Développer ${tex(`(${a}x+${b})(${c}x+${d})`)}.`,tex(`${a*c}x^2+${k}x+${b*d}`),[tex(`${a*c}x^2+${a*d}x+${b*d}`),tex(`${a*c}x^2+${b*c}x+${b*d}`),tex(`${a*c}x^2+${k+1}x+${b*d}`)],`Double distributivité : ${a*c}x² + (${a*d}+${b*c})x + ${b*d} = ${a*c}x²+${k}x+${b*d}.`)});
@@ -406,14 +407,14 @@ function intervalPair(){
  return [interval(a,c,closed(),closed()),interval(a,c,closed(),closed())];
 }
 const svgEscape=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function intervalDiagram(rows,caption='Crochet fermé : borne incluse. Crochet ouvert : borne exclue.'){
+function intervalDiagram(rows,caption='Crochet fermé : borne incluse. Crochet ouvert : borne exclue.',distance=null){
  const endpoints=rows.flatMap(r=>r.items.flatMap(i=>[i.lo,i.hi])).filter(Number.isFinite);
  const min=(endpoints.length?Math.min(...endpoints):0)-2,max=(endpoints.length?Math.max(...endpoints):4)+2;
- const left=45,right=404,width=420,height=rows.length*56+15,x=v=>left+(v-min)/(max-min)*(right-left);
+ const top=distance?28:0,left=45,right=404,width=420,height=rows.length*56+15+top,x=v=>left+(v-min)/(max-min)*(right-left);
  const step=max-min>14?2:1;
  let content='';
  rows.forEach((row,n)=>{
-  const y=22+n*56,color=['axis-a','axis-b','axis-result'][Math.min(n,2)];
+  const y=22+top+n*56,color=['axis-a','axis-b','axis-result'][Math.min(n,2)];
   content+=`<g class="${color}"><text x="5" y="${y+5}" class="axis-name">${svgEscape(row.label)}</text><line class="axis-base" x1="${left}" y1="${y}" x2="${right+3}" y2="${y}"/>`;
   for(let t=Math.ceil(min/step)*step;t<=max;t+=step)content+=`<line class="axis-tick" x1="${x(t)}" y1="${y-3}" x2="${x(t)}" y2="${y+3}"/>`;
   const items=mergeIntervals(row.items),labels=new Set();let endpointContent='';
@@ -437,6 +438,12 @@ function intervalDiagram(rows,caption='Crochet fermé : borne incluse. Crochet o
    }
   }
   content+=endpointContent;
+  if(distance&&n===0){
+   const center=x(distance.center),from=x(distance.center-distance.radius),to=x(distance.center+distance.radius),arrowY=y-18;
+   content+=`<circle class="axis-center" cx="${center}" cy="${y}" r="3.5"/><text class="axis-number" x="${center}" y="${y+22}" text-anchor="middle">${svgEscape(axisNumber(distance.center))}</text>`;
+   content+=`<path class="axis-distance-arrow" d="M${center-7} ${arrowY}H${from+9}m5-4 -5 4 5 4 M${center+7} ${arrowY}H${to-9}m-5-4 5 4-5 4"/>`;
+   content+=`<text class="axis-distance-label" x="${(center+from)/2}" y="${arrowY-6}" text-anchor="middle">−${distance.radius}</text><text class="axis-distance-label" x="${(center+to)/2}" y="${arrowY-6}" text-anchor="middle">+${distance.radius}</text>`;
+  }
   if(!items.length)content+=`<text class="axis-empty" x="205" y="${y-9}" text-anchor="middle">∅ : aucun point</text>`;
   content+='</g>';
  });
@@ -489,7 +496,7 @@ add(5,'C5-09','Valeur absolue et distance',()=>{
 });
 add(5,'C5-10','Équation avec une valeur absolue',()=>{
  const a=R(-6,6),r=R(1,6),expr=a<0?'|x+'+(-a)+'|':'|x-'+a+'|',result=[interval(a-r,a-r),interval(a+r,a+r)];
- return intervalQuestion(`Résoudre ${tex(expr+'='+r)}.`,result,[[interval(a-r,a-r)],[interval(a+r,a+r)],[interval(-r,-r),interval(r,r)],[interval(a-r,a+r)]],`On cherche les nombres situés à une distance ${r} de ${a}. Les deux solutions sont ${tex('x='+a+'-'+r+'='+String(a-r))} et ${tex('x='+a+'+'+r+'='+String(a+r))}.`,intervalDiagram([{label:'S',items:result}],'Les deux points sont à la même distance du centre.'));
+ return intervalQuestion(`Résoudre ${tex(expr+'='+r)}.`,result,[[interval(a-r,a-r)],[interval(a+r,a+r)],[interval(-r,-r),interval(r,r)],[interval(a-r,a+r)]],`On cherche les nombres situés à une distance ${r} de ${a}. Les deux solutions sont ${tex('x='+a+'-'+r+'='+String(a-r))} et ${tex('x='+a+'+'+r+'='+String(a+r))}.`,intervalDiagram([{label:'S',items:result}],`Depuis le centre ${a}, on se déplace de −${r} ou de +${r} pour atteindre les deux solutions.`,{center:a,radius:r}));
 });
 add(5,'C5-11','Proximité et intervalle',()=>{
  const a=R(-5,6),r=R(1,6),closed=!!R(0,1),i=interval(a-r,a+r,closed,closed),expr=a<0?'|x+'+(-a)+'|':'|x-'+a+'|';
@@ -640,7 +647,7 @@ add(6,'C6-10','Résoudre graphiquement f(x) = g(x)',()=>{
 
 // CHAPITRE 7 : Vecteurs, partie 1 — 12 capacités.
 const vadd=(a,b)=>({x:a.x+b.x,y:a.y+b.y}),vsub=(a,b)=>({x:a.x-b.x,y:a.y-b.y}),vscale=(a,k)=>({x:k*a.x,y:k*a.y});
-const vtuple=v=>'('+v.x+';'+v.y+')',vArrow=(a,b)=>'\\overrightarrow{'+a+b+'}',vequal=(a,b)=>a.x===b.x&&a.y===b.y;
+const vtuple=v=>'('+v.x+';'+v.y+')',vcolumn=v=>'\\binom{'+v.x+'}{'+v.y+'}',vArrow=(a,b)=>'\\overrightarrow{'+a+b+'}',vequal=(a,b)=>a.x===b.x&&a.y===b.y;
 function randomVector(limit=4){let u;do{u={x:R(-limit,limit),y:R(-limit,limit)}}while(!u.x&&!u.y);return u}
 function vectorDistractors(correct,candidates){
  const out=[];for(const v of candidates)if((v.x||v.y)&&!vequal(v,correct)&&!out.some(w=>vequal(w,v)))out.push(v);
@@ -724,7 +731,7 @@ add(7,'C7-07','Déterminer une extrémité',()=>{
  const a={x:R(-4,4),y:R(-4,4)},u=randomVector(),b=vadd(a,u),findB=!!R(0,1),known=findB?a:b,answer=findB?b:a;
  const model={points:[{...a,label:'A'},{...b,label:'B'}],vectors:[{from:a,to:b}],guides:[{from:a,to:b}]};
  const explanation=findB?`L’arrivée s’obtient en ajoutant le déplacement au départ : ${tex('x_B='+a.x+'+('+u.x+')='+b.x)} et ${tex('y_B='+a.y+'+('+u.y+')='+b.y)}.`:`Le départ s’obtient en retirant le déplacement à l’arrivée : ${tex('x_A='+b.x+'-('+u.x+')='+a.x)} et ${tex('y_A='+b.y+'-('+u.y+')='+a.y)}.`;
- return withVectorDiagram(vectorQuestion(`On connaît ${tex((findB?'A':'B')+vtuple(known))} et ${tex(vArrow('A','B')+'='+vtuple(u))}. Quelles sont les coordonnées de ${tex(findB?'B':'A')} ?`,answer,[findB?vsub(a,u):vadd(b,u),u,{x:answer.y,y:answer.x}],explanation),model,false);
+ return withVectorDiagram(vectorQuestion(`On connaît ${tex((findB?'A':'B')+vtuple(known))} et ${tex(vArrow('A','B')+'='+vcolumn(u))}. Quelles sont les coordonnées de ${tex(findB?'B':'A')} ?`,answer,[findB?vsub(a,u):vadd(b,u),u,{x:answer.y,y:answer.x}],explanation),model,false);
 });
 add(7,'C7-08','Utiliser la relation de Chasles',()=>{
  const [A,B,C]=shuffle(['A','B','C','D','E']).slice(0,3),a={x:-3,y:-1},b={x:0,y:2},c={x:3,y:0};
@@ -1043,6 +1050,7 @@ updateHomeProgress();
 // ---- AutoMaths : fiches imprimables et aperçu A4 -----------------------
 const chapterLabels={1:'Ensembles et puissances',2:'Repérage',3:'Calcul littéral et racines',4:'Information chiffrée',5:'Valeurs absolues, intervalles et encadrement',6:'Généralités sur les fonctions',7:'Vecteurs — Partie 1',8:'Variations, extrema et signe'};
 const escapeHtml=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const sheetMath=s=>escapeHtml(String(s).replace(/\\frac\b/g,'\\dfrac'));
 function printTitle(){return (el('sheetTitle').value.trim()||'AutoMaths — Automatismes de Seconde').slice(0,100)}
 function responseHeight(){return {compact:12,normal:39,large:64}[el('answerSpace').value]||22}
 function worksheetBody(solution){
@@ -1051,8 +1059,8 @@ function worksheetBody(solution){
  const header=`<header class="sheet-heading"><div><h2>${escapeHtml(printTitle())}${solution?' — Corrigé':''}</h2><div class="sheet-sub">${escapeHtml(subtitle)}</div></div><div class="sheet-sub">AutoMaths</div></header>`;
  const name=(!solution&&el('showName').checked)?'<div class="sheet-name">Nom : ....................................... Prénom : ....................................... Classe : ............</div><div style="height:14px"></div>':'';
  const questions=series.map((q,i)=>{
-  const method=solution?`<div class="sheet-correction"><div class="answer">Réponse : ${q.choiceFigures?.[q.correct]||escapeHtml(q.correct)}</div><div class="method">${escapeHtml(q.explanation)}</div>${q.diagram||''}</div>`:`<div class="ans" style="height:${responseHeight()}px"></div>`;
-  return `<article class="sheet-question"><div><strong>${i+1}.</strong> ${escapeHtml(q.q)}</div>${q.figure||''}${method}</article>`
+  const method=solution?`<div class="sheet-correction"><div class="answer">Réponse : ${q.choiceFigures?.[q.correct]||sheetMath(q.correct)}</div><div class="method">${sheetMath(q.explanation)}</div>${q.diagram||''}</div>`:`<div class="ans" style="height:${responseHeight()}px"></div>`;
+  return `<article class="sheet-question"><div><strong>${i+1}.</strong> ${sheetMath(q.q)}</div>${q.figure||''}${method}</article>`
  }).join('');
  return header+name+`<div class="sheet-columns">${questions}</div>`;
 }
