@@ -142,9 +142,9 @@ button:focus-visible,summary:focus-visible{outline:3px solid #60a5fa;outline-off
 .axis-a{color:#007d89}.axis-b{color:#346db8}.axis-result{color:#16803a}
 .axis-base{stroke:#bccbce;stroke-width:1}.axis-tick{stroke:#bccbce;stroke-width:1}
 .axis-segment{stroke:currentColor;stroke-width:4;stroke-linecap:round}.axis-b .axis-segment{stroke-dasharray:6 4}
-.axis-result .axis-segment{stroke-width:5}.axis-end{stroke:currentColor;stroke-width:2;fill:currentColor}.axis-end.excluded{fill:white}
+.axis-result .axis-segment{stroke-width:5}
 .axis-arrow{fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
-.axis-name{fill:currentColor;font:700 14px system-ui,sans-serif}.axis-number{fill:#203d47;font:14px system-ui,sans-serif}.axis-empty{fill:#203d47;font:13px system-ui,sans-serif}
+.axis-bracket{fill:none;stroke:currentColor;stroke-width:2.3;stroke-linejoin:miter}.axis-name{fill:currentColor;font:700 14px system-ui,sans-serif}.axis-number{fill:#203d47;font:14px system-ui,sans-serif}.axis-empty{fill:#203d47;font:13px system-ui,sans-serif}
 #questionFigure:empty{display:none}#questionFigure .axis-figure{margin-top:-4px;margin-bottom:22px}
 @media screen{.feedback .axis-figure{background:#fff;border-radius:12px;padding:8px 10px}.sheet-correction .axis-figure{margin:9px 0}.sheet-correction .axis-figure figcaption{font-size:9px}}
 @media print{.axis-a,.axis-b,.axis-result{color:#111!important}.axis-figure figcaption,.axis-number,.axis-empty{color:#111!important;fill:#111!important}.axis-figure{max-width:100%;margin:3mm 0}.axis-figure figcaption{font-size:7pt}.axis-base,.axis-tick{stroke:#888}.axis-segment{stroke-width:3}.axis-result .axis-segment{stroke-width:4}}
@@ -179,7 +179,7 @@ button:focus-visible,summary:focus-visible{outline:3px solid #60a5fa;outline-off
 @media print{.vector-figure{margin:3mm 0;max-width:100%}.vector-figure figcaption{color:#111;font-size:7pt}.vector-a,.vector-b,.vector-result{color:#111!important}.vector-number,.vector-point-label,.vector-measure{fill:#111!important}.vector-name{fill:currentColor}.vector-guide,.vector-zero{stroke:#111!important}.vector-point{fill:#111}.vector-axis{stroke:#555}.vector-grid{stroke:#ccc}.vector-outline{stroke:#777}}
 
 .option:has(.study-table){display:flex;align-items:center;gap:10px;min-width:0}.option .study-table{flex:1;min-width:0;margin:0}.option .study-table figcaption{display:none}#answers:has(.study-table){grid-template-columns:1fr}
-.study-table{max-width:630px;margin:16px auto;break-inside:avoid}.study-table svg{display:block;width:100%;background:white;border-radius:12px}.study-table text{fill:#294953;font:16px Georgia,serif;text-anchor:middle}.study-rule{fill:none;stroke:#73858c;stroke-width:1}.study-arrow{fill:none;stroke:#2563eb;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}.study-table figcaption{font:11px/1.5 system-ui;color:#4a6873;margin-top:5px}.study-sign{overflow-x:auto;max-width:100%;padding:18px 4px;background:white;border-radius:12px;font-size:clamp(12px,3.5vw,19px);text-align:center}.chapter-tile:last-child{grid-column:auto!important}
+.study-table{max-width:630px;margin:16px auto;break-inside:avoid}.study-table svg{display:block;width:100%;background:white;border-radius:12px}.study-table text{fill:#294953;font:16px Georgia,serif;text-anchor:middle}.study-table .study-math-letter{font-style:italic}.study-rule{fill:none;stroke:#73858c;stroke-width:1}.study-arrow{fill:none;stroke:#2563eb;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}.study-table figcaption{font:11px/1.5 system-ui;color:#4a6873;margin-top:5px}.study-sign{overflow-x:auto;max-width:100%;padding:18px 4px;background:white;border-radius:12px;font-size:clamp(12px,3.5vw,19px);text-align:center}.chapter-tile:last-child{grid-column:auto!important}
 @media print{.study-arrow{stroke:#111}.study-table{margin:3mm 0}.study-sign{font-size:10pt;padding:3mm 0}.study-table figcaption{font-size:7pt}}
 .skill-history{display:flex;gap:3px;margin-top:12px;max-width:100%}.history-cell{flex:1;min-width:0;max-width:22px;height:20px;border-radius:4px;text-align:center;font:700 12px/20px system-ui}.history-cell.success{background:#d3f2df;color:#166534;border:1px solid #82c99e}.history-cell.error{color:#8f2020;border:1px solid #db8a8a;background:repeating-linear-gradient(135deg,#ffe4e4 0 4px,#f6c1c1 4px 7px)}.history-caption{display:block;color:#536d75;font-size:10px;margin-top:4px}
 .brand-home{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;border:0;background:transparent;padding:3px;border-radius:10px;color:inherit;cursor:pointer}.brand-home:hover{background:#dff4ef}.brand-home:focus-visible{outline:3px solid #007d89;outline-offset:3px}.mode-picker{margin:0 0 24px;padding:18px 22px;border:1px solid #e3efec;border-radius:20px;background:white}.mode-picker .mode-title{position:static;clip-path:none;width:auto;height:auto;overflow:visible;margin:0 0 10px;white-space:normal;color:#416875;font-size:14px}.mode-picker .mode-row{margin:0}.brand-home .brand-logo{display:block}
@@ -406,7 +406,7 @@ function intervalPair(){
  return [interval(a,c,closed(),closed()),interval(a,c,closed(),closed())];
 }
 const svgEscape=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function intervalDiagram(rows,caption='Point plein : borne incluse. Point vide : borne exclue.'){
+function intervalDiagram(rows,caption='Crochet fermé : borne incluse. Crochet ouvert : borne exclue.'){
  const endpoints=rows.flatMap(r=>r.items.flatMap(i=>[i.lo,i.hi])).filter(Number.isFinite);
  const min=(endpoints.length?Math.min(...endpoints):0)-2,max=(endpoints.length?Math.max(...endpoints):4)+2;
  const left=45,right=404,width=420,height=rows.length*56+15,x=v=>left+(v-min)/(max-min)*(right-left);
@@ -419,13 +419,21 @@ function intervalDiagram(rows,caption='Point plein : borne incluse. Point vide :
   const items=mergeIntervals(row.items),labels=new Set();let endpointContent='';
   for(const i of items){
    const start=i.lo===-Infinity?left:x(i.lo),end=i.hi===Infinity?right:x(i.hi);
+   if(i.lo===i.hi){
+    if(!labels.has(i.lo)){
+     labels.add(i.lo);
+     endpointContent+=`<path class="axis-bracket included" d="M${start-7} ${y-6}H${start-3}V${y+6}H${start-7}M${start+7} ${y-6}H${start+3}V${y+6}H${start+7}"/><line class="axis-segment" x1="${start-3}" y1="${y}" x2="${start+3}" y2="${y}"/><text class="axis-number" x="${start}" y="${y+22}" text-anchor="middle">${svgEscape(axisNumber(i.lo))}</text>`;
+    }
+    continue;
+   }
    if(start!==end)content+=`<line class="axis-segment" x1="${start}" y1="${y}" x2="${end}" y2="${y}"/>`;
-   for(const [value,included,point]of [[i.lo,i.lc,start],[i.hi,i.rc,end]]){
+   for(const [value,included,point,side]of [[i.lo,i.lc,start,1],[i.hi,i.rc,end,-1]]){
     if(!Number.isFinite(value)){
      const dir=value<0?1:-1;content+=`<path class="axis-arrow" d="M${point+dir*7} ${y-5}L${point} ${y}L${point+dir*7} ${y+5}"/>`;continue;
     }
     if(labels.has(value))continue;labels.add(value);
-    endpointContent+=`<circle class="axis-end ${included?'included':'excluded'}" cx="${point}" cy="${y}" r="4.5"/><text class="axis-number" x="${point}" y="${y+22}" text-anchor="middle">${svgEscape(axisNumber(value))}</text>`;
+    const direction=included?side:-side;
+    endpointContent+=`<path class="axis-bracket ${included?'included':'excluded'}" d="M${point+direction*5} ${y-6}H${point}V${y+6}H${point+direction*5}"/><text class="axis-number" x="${point}" y="${y+22}" text-anchor="middle">${svgEscape(axisNumber(value))}</text>`;
    }
   }
   content+=endpointContent;
@@ -436,7 +444,7 @@ function intervalDiagram(rows,caption='Point plein : borne incluse. Point vide :
 }
 function operationExplanation(a,b,result,union){
  const op=union?'\\cup':'\\cap',rule=union?'On conserve les nombres appartenant à au moins un des deux intervalles.':'On conserve uniquement les nombres appartenant aux deux intervalles.';
- let text=rule+' '+tex(`A${op}B=${setTex(result)}`)+'. ';
+ let text=rule+' '+tex(`A${op} B=${setTex(result)}`)+'. ';
  if(!result.length)return text+'Aucun nombre n’appartient aux deux intervalles.';
  if(result.length>1)text+='Il reste deux morceaux séparés : aucun intervalle unique ne convient. ';
  if(result.length===1&&result[0].lo===result[0].hi)return text+'Le seul point commun est '+tex(intervalNumber(result[0].lo))+', inclus dans les deux intervalles.';
@@ -459,13 +467,13 @@ add(5,'C5-03','Appartenance à un intervalle',()=>{
  return question(`Quel nombre appartient à ${tex(setTex([i]))} ?`,tex(dec(mid)),outside.map(x=>tex(dec(x))),`${tex(intervalCondition(i))}. Le nombre ${tex(dec(mid))} vérifie ces conditions.`);
 });
 add(5,'C5-04','Lire un intervalle sur un axe',()=>{
- const i=randomInterval(true),q=intervalQuestion('Quel intervalle est représenté sur cette droite graduée ?',[i],boundaryAlternatives(i),`La partie tracée représente ${tex(setTex([i]))}. Les points pleins sont inclus ; les points vides sont exclus.`);
- return {...q,figure:intervalDiagram([{label:'I',items:[i]}],'Lire les bornes et leurs points pleins ou vides. Une flèche indique que le tracé se prolonge à l’infini.')};
+ const i=randomInterval(true),q=intervalQuestion('Quel intervalle est représenté sur cette droite graduée ?',[i],boundaryAlternatives(i),`La partie tracée représente ${tex(setTex([i]))}. Les crochets fermés incluent leur borne ; les crochets ouverts l’excluent.`);
+ return {...q,figure:intervalDiagram([{label:'I',items:[i]}],'Lire les bornes et leurs crochets ouverts ou fermés. Une flèche indique que le tracé se prolonge à l’infini.')};
 });
 for(const union of [false,true])add(5,union?'C5-06':'C5-05',union?'Réunion de deux intervalles':'Intersection de deux intervalles',()=>{
  const [a,b]=intervalPair(),result=union?mergeIntervals([a,b]):intersectIntervals(a,b),other=union?intersectIntervals(a,b):mergeIntervals([a,b]);
  const candidates=[other,[interval(Math.min(a.lo,b.lo),Math.max(a.hi,b.hi),true,true)],...result.flatMap(boundaryAlternatives),[],[interval(b.lo,b.hi,b.lc,b.rc)],[interval(a.lo,a.hi,a.lc,a.rc)]];
- return intervalQuestion(`On donne ${tex('A='+setTex([a]))} et ${tex('B='+setTex([b]))}. Déterminer ${tex(union?'A\\cup B':'A\\cap B')}.`,result,candidates,operationExplanation(a,b,result,union),intervalDiagram([{label:'A',items:[a]},{label:'B',items:[b]},{label:'R',items:result}],'A et B : intervalles de départ. R : résultat. Point plein : inclus ; point vide : exclu.'));
+ return intervalQuestion(`On donne ${tex('A='+setTex([a]))} et ${tex('B='+setTex([b]))}. Déterminer ${tex(union?'A\\cup B':'A\\cap B')}.`,result,candidates,operationExplanation(a,b,result,union),intervalDiagram([{label:'A',items:[a]},{label:'B',items:[b]},{label:'R',items:result}],'A et B : intervalles de départ. R : résultat. Crochet fermé : inclus ; crochet ouvert : exclu.'));
 });
 add(5,'C5-07','Calculer une valeur absolue',()=>{
  const numerator=pick([-1,1])*R(1,19),denominator=pick([1,2,4]),value=numerator/denominator,v=Math.abs(value),input=denominator>1&&R(0,1)?frac(numerator,denominator):dec(value);
@@ -524,7 +532,7 @@ function parabolaModel(){
  return {h,k,lo,hi,fn:x=>(x-h)**2+k,formula:shiftedSquare(h,k)};
 }
 function functionGraph(model,solution=false){
- const width=440,height=300,L=44,Rm=18,T=19,B=40;
+ const width=440,height=312,L=44,Rm=18,T=31,B=40;
  const xMin=model.xMin??-5,xMax=model.xMax??5;
  const samples=model.curves.map(curve=>Array.from({length:161},(_,i)=>{
   const x=curve.lo+(curve.hi-curve.lo)*i/160;return [x,curve.fn(x)];
@@ -569,12 +577,10 @@ function functionGraph(model,solution=false){
    else svg+=`<path class="${cls} open" d="M${cx+side*8.535533906} ${cy-3.535533906} A5 5 0 1 ${side===1?0:1} ${cx+side*8.535533906} ${cy+3.535533906}"/>`;
   }
  });
- // Noms des courbes, placés près du tracé dans leur couleur respective.
+ // Légende dans la marge supérieure : les noms ne recouvrent jamais les tracés.
  model.curves.forEach((curve,index)=>{
-  const fraction=index?.78:.24,x=curve.lo+(curve.hi-curve.lo)*fraction;
-  const px=Math.max(L+18,Math.min(width-Rm-24,X(x)+10));
-  const py=Math.max(T+18,Math.min(height-B-12,Y(curve.fn(x))-12));
-  svg+=`<text class="function-curve-label function-label-${index?'b':'a'}" x="${px}" y="${py}">𝒞<tspan baseline-shift="sub" font-size="12">${index?'g':'f'}</tspan></text>`;
+  const px=width-Rm-12-(model.curves.length-1-index)*69;
+  svg+=`<text class="function-curve-label function-label-${index?'b':'a'}" x="${px}" y="18" text-anchor="end">𝒞<tspan baseline-shift="sub" font-size="12">${index?'g':'f'}</tspan></text>`;
  });
  const caption=model.caption||(model.curves.length>1?'Courbe f : trait plein bleu. Courbe g : trait orange en tirets.':'Courbe représentative de la fonction f.');
  return `<figure class="function-figure"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${svgEscape(caption)}" data-x-min="${xMin}" data-x-max="${xMax}" data-y-min="${yMin}" data-y-max="${yMax}">${svg}</svg><figcaption>${svgEscape(caption+(solution&&model.solutionCaption?' '+model.solutionCaption:''))}</figcaption></figure>`;
@@ -802,9 +808,9 @@ add(8,'C8-04','Comparer des images avec les variations',()=>{
 for(const [id,name,max]of [['05','Déterminer un maximum et son abscisse',true],['06','Déterminer un minimum et son abscisse',false]])add(8,'C8-'+id,name,()=>{
  const p=variationModel(),value=(max?Math.max:Math.min)(...p.ys),j=p.ys.indexOf(value),points=p.xs.flatMap((x,i)=>p.ys[i]===value?[interval(x,x)]:[]);
  for(let i=0;i<p.xs.length-1;i++)if(p.ys[i]===value&&p.ys[i+1]===value)points.push(interval(p.xs[i],p.xs[i+1]));
- const where=tex(setTex(points)),label=max?'Maximum':'Minimum',correct=`${label} : ${value}, atteint pour `+tex('x\\in '+setTex(points));
- const wrong=[value-1,value+1,value+2].map(v=>`${label} : ${v}, atteint pour `+tex('x\\in '+setTex(points)));
- const q=question(`Quel est le ${max?'maximum':'minimum'} de f sur tout le domaine représenté, et où est-il atteint ?`,correct,wrong,`Le ${max?'plus haut':'plus bas'} niveau atteint est ${value}. L’ensemble des abscisses où il est atteint est ${where}, y compris tout palier éventuel.`);
+ const only=mergeIntervals(points),where=tex(only.length===1&&only[0].lo===only[0].hi?'x='+intervalNumber(only[0].lo):'x\\in '+setTex(points)),label=max?'Maximum':'Minimum',correct=`${label} : ${value}, atteint pour ${where}`;
+ const wrong=[value-1,value+1,value+2].map(v=>`${label} : ${v}, atteint pour ${where}`);
+ const q=question(`Quel est le ${max?'maximum':'minimum'} de f sur tout le domaine représenté, et où est-il atteint ?`,correct,wrong,`Le ${max?'plus haut':'plus bas'} niveau atteint est ${value}. Il est atteint pour ${where}, y compris sur tout palier éventuel.`);
  return R(0,1)?withVariation(q,p):withFunctionGraph(q,{...p,guides:p.xs.flatMap((x,i)=>p.ys[i]===value?[{x,y:value,horizontal:true}]:[])});
 });
 add(8,'C8-07','Encadrer une image avec un tableau',()=>{
@@ -815,7 +821,7 @@ function signModel(){const a=R(-3,-1),b=R(1,3),sign=pick([-1,1]),lo=a-1,hi=b+1,k
 function signTex(p,sgn=p.sign){return '\\begin{array}{c|ccccccc}x&'+p.lo+'&&'+p.a+'&&'+p.b+'&&'+p.hi+'\\\\\\hline \\text{signe de }f(x)&&'+(sgn>0?'+':'-')+'&\\underset{\\vert}{\\overset{\\vert}{0}}&'+(sgn>0?'-':'+')+'&\\underset{\\vert}{\\overset{\\vert}{0}}&'+(sgn>0?'+':'-')+'&\\end{array}'}
 function signFigure(p){
  const xs=[76,186,304,414],ys=[p.lo,p.a,p.b,p.hi];
- let body='<path fill="none" stroke="#73858c" stroke-width="1" d="M8 38H432M53 8V105M186 38V105M304 38V105"/><text x="27" y="27">x</text><text x="27" y="68" style="font-size:12px">signe de</text><text x="27" y="85">𝑓(𝑥)</text>';
+ let body='<path fill="none" stroke="#73858c" stroke-width="1" d="M8 38H432M53 8V105M186 38V105M304 38V105"/><text class="study-math-letter" x="27" y="27">x</text><text x="27" y="68" style="font-size:12px">signe de</text><text class="study-math-letter" x="27" y="85">f(x)</text>';
  xs.forEach((x,i)=>body+=`<text x="${x}" y="27">${ys[i]}</text>`);
  [186,304].forEach(x=>body+=`<rect x="${x-9}" y="60" width="18" height="24" fill="white"/><text x="${x}" y="78">0</text>`);
  [131,245,359].forEach((x,i)=>body+=`<text x="${x}" y="78">${(i===1?-p.sign:p.sign)>0?'+':'−'}</text>`);
