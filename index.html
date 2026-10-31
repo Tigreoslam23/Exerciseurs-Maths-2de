@@ -507,7 +507,7 @@ add(5,'C5-11','Proximité et intervalle',()=>{
 });
 add(5,'C5-12','D’un intervalle à une valeur absolue',()=>{
  const a=pick([-1,1])*R(1,6),r=R(1,5),closed=!!R(0,1),i=interval(a-r,a+r,closed,closed),expr=center=>center<0?'|x+'+(-center)+'|':'|x-'+center+'|',op=closed?'\\leq':'<';
- return {...question(`Quelle condition équivaut à ${tex('x\\in '+setTex([i]))} ?`,tex(expr(a)+op+r),[tex(expr(-a)+op+r),tex(expr(a)+(closed?'<':'\\leq')+r),tex(expr(a)+op+(r+1))],`Le centre est ${tex('('+String(a-r)+'+'+String(a+r)+')/2='+a)} et le rayon est ${tex('('+String(a+r)+'-('+String(a-r)+'))/2='+r)}. On obtient ${tex(expr(a)+op+r)}.`),diagram:intervalDiagram([{label:'I',items:[i]}])};
+ return {...question(`Comment traduire ${tex('x\\in '+setTex([i]))} à l’aide d’une valeur absolue ?`,tex(expr(a)+op+r),[tex(expr(-a)+op+r),tex(expr(a)+(closed?'<':'\\leq')+r),tex(expr(a)+op+(r+1))],`Le centre est ${tex('('+String(a-r)+'+'+String(a+r)+')/2='+a)} et le rayon est ${tex('('+String(a+r)+'-('+String(a-r)+'))/2='+r)}. On obtient ${tex(expr(a)+op+r)}.`),diagram:intervalDiagram([{label:'I',items:[i]}])};
 });
 add(5,'C5-13','Encadrer une somme',()=>{
  const a=R(-7,3),b=a+R(1,5),c=R(-5,4),d=c+R(1,5),i=interval(a+c,b+d);
