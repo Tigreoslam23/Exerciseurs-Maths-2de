@@ -7,6 +7,8 @@ Divers exerciceurs pour 2de
 - [Identités remarquables : développements et factorisations](https://tigreoslam23.github.io/Exerciseurs-Maths-2de/identites-remarquables.html)
 - [Résolution d’équations : entraînements guidés et mode mixte](https://tigreoslam23.github.io/Exerciseurs-Maths-2de/equations-entrainement.html)
 
+AutoMaths Seconde propose un QCM individuel, des fiches PDF et un diaporama pour la classe. Le diaporama affiche les questions seules, puis tous les corrigés dans le même ordre ; il ne modifie pas la progression individuelle. Les flèches du clavier, la barre d’espace et les boutons permettent de naviguer. Le mode plein écran est adapté à la projection.
+
 L’exerciseur sur les identités remarquables propose trois niveaux, des séries de 3, 5 ou 10 questions, un chronomètre facultatif, une correction ciblée et un clavier numérique intégré. Il s’utilise sur ordinateur, tablette et téléphone.
 
 ## Résolution d’équations

@@ -1,10 +1,10 @@
 /* AutoMaths: cache borné à l’application, sans modifier les autres exerciseurs. */
-const VERSION='automaths-offline-v1';
+const VERSION='automaths-offline-v2';
 const CACHE=VERSION;
 const ROOT=new URL('./',self.location.href);
 const APP=new URL('index.html',ROOT).href;
 const MATHJAX='https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-svg-full.js';
-const ASSETS=['./','index.html','manifest.webmanifest','pwa.js','icons/automaths-192.png','icons/automaths-512.png','icons/automaths-180.png'].map(p=>new URL(p,ROOT).href).concat(MATHJAX);
+const ASSETS=['./','index.html','manifest.webmanifest','pwa.js','slides.css','slides.js','icons/automaths-192.png','icons/automaths-512.png','icons/automaths-180.png'].map(p=>new URL(p,ROOT).href).concat(MATHJAX);
 self.addEventListener('install',event=>event.waitUntil((async()=>{
  const cache=await caches.open(CACHE);
  try{await cache.addAll(ASSETS.map(url=>new Request(url,{cache:'reload',mode:'cors'})))}catch(error){await caches.delete(CACHE);throw error}
