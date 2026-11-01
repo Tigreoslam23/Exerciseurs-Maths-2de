@@ -714,8 +714,22 @@ for(const opposite of [false,true])add(7,opposite?'C7-03':'C7-02',opposite?'Reco
  return withVectorDiagram(question(`Quel vecteur est ${opposite?'opposé':'égal'} à ${tex('\\vec u')} ?`,tex('\\vec '+labels[index]),labels.filter((_,i)=>i!==index).map(c=>tex('\\vec '+c)),`${opposite?'Deux vecteurs opposés ont la même direction et la même norme, mais des sens contraires.':'Deux vecteurs égaux ont la même direction, le même sens et la même norme.'} Ici ${tex('\\vec '+labels[index]+'='+ (opposite?'-':'')+'\\vec u')}. Les points de départ peuvent être différents.`),model);
 });
 add(7,'C7-04','Utiliser le vecteur nul',()=>{
- const kind=R(0,2),expr=kind===0?vArrow('A','A'):kind===1?'\\vec u+\\vec 0':'\\vec u-\\vec u',correct=kind===1?'\\vec u':'\\vec 0';
- return question(`On suppose ${tex('\\vec u\\ne\\vec 0')}. Simplifier ${tex(expr)}.`,tex(correct),['\\vec 0','\\vec u','-\\vec u','2\\vec u'].filter(v=>v!==correct).map(tex),kind===0?'Le déplacement d’un point vers lui-même est nul.':kind===1?'Ajouter le vecteur nul ne change pas un vecteur.':'Un vecteur et son opposé ont une somme nulle.');
+ const ab=vArrow('A','B'),ba=vArrow('B','A'),aa=vArrow('A','A'),bb=vArrow('B','B');
+ const bc=vArrow('B','C'),cb=vArrow('C','B'),cd=vArrow('C','D'),dc=vArrow('D','C');
+ const zero='\\vec 0',u='\\vec u';
+ const variants=[
+  {expr:aa,answer:zero,wrong:[ab,ba,'2'+ab],explanation:'Le déplacement de A vers A est nul.',points:true},
+  {expr:u+'+'+zero,answer:u,wrong:[zero,'-'+u,'2'+u],explanation:'Ajouter le vecteur nul ne change pas un vecteur.'},
+  {expr:u+'-'+u,answer:zero,wrong:[u,'-'+u,'2'+u],explanation:'Soustraire un vecteur à lui-même donne le vecteur nul.'},
+  {expr:ab+'+'+ba,answer:zero,wrong:[ab,ba,'2'+ab],explanation:'Les vecteurs '+tex(ab)+' et '+tex(ba)+' sont opposés : leur somme est nulle.',points:true},
+  {expr:aa+'+'+bc,answer:bc,wrong:[zero,cb,'2'+bc],explanation:tex(aa+'='+zero)+'. Ajouter ce vecteur nul à '+tex(bc)+' ne le change pas.',points:true},
+  {expr:cd+'-'+cd,answer:zero,wrong:[cd,dc,'2'+cd],explanation:'Un vecteur moins lui-même est égal au vecteur nul.',points:true},
+  {expr:zero+'-'+ab,answer:ba,wrong:[zero,ab,'2'+ab],explanation:'L’opposé de '+tex(ab)+' est '+tex(ba)+'.',points:true},
+  {expr:aa+'+'+bb,answer:zero,wrong:[ab,ba,'2'+ab],explanation:tex(aa)+' et '+tex(bb)+' sont deux vecteurs nuls.',points:true},
+  {expr:ab+'+'+ba+'+'+cd,answer:cd,wrong:[zero,dc,'2'+cd],explanation:'Les deux premiers vecteurs sont opposés et leur somme est nulle. Il reste '+tex(cd)+'.',points:true}
+ ];
+ const v=pick(variants),intro=v.points?'Soient A, B, C et D des points distincts. ':'On suppose '+tex(u+'\\ne'+zero)+'. ';
+ return question(intro+'Compléter : '+tex(v.expr+'=\\ldots')+'.',tex(v.answer),v.wrong.map(tex),v.explanation);
 });
 add(7,'C7-05','Lire les coordonnées d’un vecteur',()=>{
  const u=randomVector(),a={x:R(-3,2),y:R(-3,2)},b=vadd(a,u),model={vectors:[{from:a,to:b,label:'u'}],guides:[{from:a,to:b}],solutionCaption:'On lit le déplacement horizontal puis le déplacement vertical.'};
