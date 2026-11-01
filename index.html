@@ -347,7 +347,7 @@ add(4,'C4-11','Coefficient global',()=>{let a=pick([10,20,25]),b=pick([10,20,25]
 add(4,'C4-12','Taux global',()=>{let a=pick([10,20,25]),b=pick([10,20,25]),sa=pick([-1,1]),sb=pick([-1,1]),c=(1+sa*a/100)*(1+sb*b/100),r=Math.round((c-1)*10000)/100;return q4(`Une quantité subit une ${sa>0?'hausse':'baisse'} de ${a} %, puis une ${sb>0?'hausse':'baisse'} de ${b} %. Quel est le taux d'évolution global ?`,pct(dec(r)),[pct(dec(sa*a+sb*b)),pct(dec(-r)),pct(dec(r+10))],`Le coefficient global vaut ${dec(c)}. Le taux est (${dec(c)} − 1) × 100 = ${dec(r)} %.`)});
 add(4,'C4-13','Évolution réciproque',()=>{let r=pick([10,20,25,50]),sign=pick([-1,1]),coef=1+sign*r/100,reverse=Math.round((1/coef-1)*10000)/100;return q4(`Une quantité subit une ${sign>0?'augmentation':'diminution'} de ${r} %. Quel taux faut-il appliquer ensuite pour retrouver sa valeur initiale (arrondir à 0,01 % si nécessaire) ?`,pct(dec(reverse)),[pct(-sign*r),pct(sign*r),pct(dec(-reverse))],`Le coefficient réciproque est 1 ÷ ${dec(coef)} ; le taux réciproque vaut ${dec(reverse)} %.`)});
 
-// CHAPITRE 5 : Valeurs absolues, intervalles et encadrement — 16 capacités.
+// CHAPITRE 5 : Valeurs absolues, intervalles et encadrement — 15 capacités.
 const interval=(lo,hi,lc=true,rc=true)=>({lo,hi,lc:Number.isFinite(lo)&&lc,rc:Number.isFinite(hi)&&rc});
 function intervalEmpty(i){return i.lo>i.hi||(i.lo===i.hi&&!(i.lc&&i.rc))}
 function mergeIntervals(items){
@@ -521,11 +521,6 @@ add(5,'C5-15','Encadrer un produit positif',()=>{
  const a=R(1,5),b=a+R(1,5),c=R(1,5),d=c+R(1,5),i=interval(a*c,b*d);
  return intervalQuestion(`Si ${tex(a+'\\leq x\\leq '+b)} et ${tex(c+'\\leq y\\leq '+d)}, quel est l’encadrement le plus précis possible de ${tex('xy')} ?`,[i],[[interval(a*d,b*d)],[interval(a*c,b*c)],[interval(a*c-1,b*d+1)]],`Les deux nombres sont positifs. On peut multiplier les bornes de même sens : ${tex(a+'\\times '+c+'\\leq xy\\leq '+b+'\\times '+d)}, soit ${tex(intervalCondition(i,'xy'))}.`,'',items=>intervalCondition(items[0],'xy'));
 });
-add(5,'C5-16','Éloignement et réunion d’intervalles',()=>{
- const a=R(-5,5),r=R(1,6),closed=!!R(0,1),result=[interval(-Infinity,a-r,false,closed),interval(a+r,Infinity,closed,false)],expr=a<0?'|x+'+(-a)+'|':'|x-'+a+'|';
- return intervalQuestion(`Quel est l’ensemble des solutions de ${tex(expr+(closed?'\\geq':'>')+r)} ?`,result,[[interval(a-r,a+r,closed,closed)],[interval(-Infinity,a-r,false,!closed),interval(a+r,Infinity,!closed,false)],[interval(a+r,Infinity,closed,false)]],`La distance à ${a} doit être ${closed?'supérieure ou égale':'strictement supérieure'} à ${r}. On garde les nombres à gauche de ${a-r} ou à droite de ${a+r}. Les bornes sont ${closed?'incluses':'exclues'}.`,intervalDiagram([{label:'S',items:result}],'Deux demi-droites : à gauche ou à droite de la zone de proximité.'));
-});
-
 // CHAPITRE 6 : Généralités sur les fonctions — 10 capacités, sans parité.
 function polynomialText(a,b,c){
  const terms=[[a,'x^2'],[b,'x'],[c,'']].filter(([v])=>v!==0);
