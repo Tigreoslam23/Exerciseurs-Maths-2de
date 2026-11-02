@@ -241,7 +241,7 @@ chapterMarks[8]=`<svg class="chapter-mark" viewBox="0 0 48 48" aria-hidden="true
 function chapterLogo(chapter){return chapterMarks[chapter]||''}
 const families=[];function add(c,id,name,fn){families.push({c,id,name,fn})}function question(q,correct,wrong,explanation){q=readableNotation(q);correct=readableNotation(correct);wrong=wrong.map(readableNotation);explanation=readableNotation(explanation);let choices=[correct,...wrong.filter(x=>x!==correct)];choices=[...new Set(choices)];if(choices.length<4)throw Error('Propositions insuffisantes');return {q,correct,choices:shuffle(choices.slice(0,4)),explanation}}
 const n=()=>R(2,8),signed=()=>pick([-1,1])*R(1,9),square=()=>R(2,12);
-// CHAPITRE 1 : 12 familles
+// CHAPITRE 1 : 13 familles
 add(1,'C1-01','Plus petit ensemble',()=>{let a=R(2,19),type=R(0,3),v=[String(a),String(-a),frac(a%10||3,10),frac(a,3*a)][type],ans=['\\mathbb N','\\mathbb Z','\\mathbb D','\\mathbb Q'][type];return question(`Quel est le plus petit ensemble contenant ${tex(v)} ?`,tex(ans),['\\mathbb N','\\mathbb Z','\\mathbb D','\\mathbb Q','\\mathbb R'].map(tex).filter(x=>x!==tex(ans)),`On cherche le plus petit ensemble usuel.`)});
 add(1,'C1-02','Inclusion ou appartenance',()=>{
  const sets=['\\mathbb N','\\mathbb Z','\\mathbb D','\\mathbb Q','\\mathbb R'];
@@ -297,13 +297,48 @@ add(1,'C1-09','Puissance de produit',()=>{let a=R(2,5),b=R(6,9),e=R(2,5);return 
 add(1,'C1-10','Exposants négatifs',()=>{let a=n(),e=R(2,7);return question(`${tex(pow(a,-e))} = ?`,tex(frac(1,pow(a,e))),[tex(pow(a,e)),tex(frac(-1,pow(a,e))),tex(frac(1,pow(a,e+1)))],'Un exposant négatif donne l’inverse.')});
 add(1,'C1-11','Règles combinées',()=>{let a=n(),u=R(2,5),v=R(2,4),w=R(1,5),z=R(1,4),k=u*v-w-z;return question(`${tex(frac(`(${pow(a,u)})^{${v}}\\times ${pow(a,-w)}`,pow(a,z)))} = ?`,tex(pow(a,k)),[tex(pow(a,u+v-w-z)),tex(pow(a,u*v+w-z)),tex(pow(a,u*v-w+z))],`Exposant final : ${u} ×  ${v}-${w}-${z}=${k}.`)});
 add(1,'C1-12','Exposant manquant',()=>{let a=n(),u=R(2,7),v=R(2,7);return question(`${tex(`${pow(a,u)}\\times ${a}^{\\square}=${pow(a,u+v)}`)}. Quel exposant manque ?`,tex(String(v)),[tex(String(u)),tex(String(u+v)),tex(String(Math.abs(u-v)+1))],`L'exposant recherché est ${u+v}-${u}=${v}.`)});
-// CHAPITRE 2 : 9 familles
-add(2,'C2-01','Lire des coordonnées',()=>{let x=signed(),y=signed();return question(`Un point est placé à ${x} unités horizontalement et ${y} unités verticalement depuis l’origine. Ses coordonnées sont :`,tex(`(${x};${y})`),[tex(`(${y};${x})`),tex(`(${-x};${y})`),tex(`(${x};${-y})`)],'Abscisse d’abord, ordonnée ensuite.')});
+const fractionGcd=(a,b)=>b?fractionGcd(b,a%b):Math.abs(a);
+function reducedFraction(a,b){let g=fractionGcd(a,b),sign=b<0?-1:1;return {a:sign*a/g,b:sign*b/g}}
+const fractionAdd=(u,v)=>reducedFraction(u.a*v.b+v.a*u.b,u.b*v.b);
+const fractionMinus=(u,v)=>reducedFraction(u.a*v.b-v.a*u.b,u.b*v.b);
+const fractionMultiply=(u,v)=>reducedFraction(u.a*v.a,u.b*v.b);
+const fractionDivide=(u,v)=>reducedFraction(u.a*v.b,u.b*v.a);
+const fractionLatex=u=>u.b===1?String(u.a):`\\dfrac{${u.a}}{${u.b}}`;
+function smallestNumberSet(u){
+ if(u.b===1)return u.a>=0?'\\mathbb N':'\\mathbb Z';
+ let d=u.b;while(d%2===0)d/=2;while(d%5===0)d/=5;
+ return d===1?'\\mathbb D':'\\mathbb Q';
+}
+add(1,'C1-13','Calculer puis déterminer le plus petit ensemble',()=>{
+ const target=pick(['\\mathbb N','\\mathbb Z','\\mathbb D','\\mathbb Q']);
+ for(let attempt=0;attempt<8000;attempt++){
+  const operand=()=>{let a,b;do{a=R(1,10);b=R(2,7)}while(fractionGcd(a,b)!==1);return {a,b}};
+  const u=operand(),v=operand(),w=operand(),sum=!!R(0,1),product=!!R(0,1);
+  const intermediate=product?fractionMultiply(v,w):fractionDivide(v,w);
+  const result=sum?fractionAdd(u,intermediate):fractionMinus(u,intermediate);
+  if(Math.abs(result.a)>80||result.b>60||smallestNumberSet(result)!==target)continue;
+  const op=sum?'+':'-',secondOp=product?'\\times':'\\div';
+  const expression=`${fractionLatex(u)}${op}${fractionLatex(v)}${secondOp}${fractionLatex(w)}`;
+  const reason=target==='\\mathbb N'?'un entier naturel':target==='\\mathbb Z'?'un entier négatif':target==='\\mathbb D'?'un décimal non entier':'un rationnel dont le dénominateur réduit possède un facteur autre que 2 ou 5';
+  return question(`On pose ${tex(`A=${expression}`)}. Quel est le plus petit ensemble contenant ${tex('A')} ?`,tex(target),['\\mathbb N','\\mathbb Z','\\mathbb D','\\mathbb Q'].filter(x=>x!==target).map(tex),`On calcule d’abord le ${product?'produit':'quotient'} : ${tex(`${fractionLatex(v)}${secondOp}${fractionLatex(w)}=${fractionLatex(intermediate)}`)}. Puis ${tex(`A=${fractionLatex(u)}${op}(${fractionLatex(intermediate)})=${fractionLatex(result)}`)}. C’est ${reason}, donc le plus petit ensemble est ${tex(target)}.`);
+ }
+ throw Error('Aucun calcul adapté à cette catégorie');
+});
+// CHAPITRE 2 : 8 familles
 add(2,'C2-02','Identifier un point',()=>{let x=signed(),y=signed();return question(`Quel point a pour coordonnées ${tex(`(${x};${y})`)} ?`,tex(`A(${x};${y})`),[tex(`B(${y};${x})`),tex(`C(${-x};${y})`),tex(`D(${x};${-y})`)],'Vérifier dans l’ordre abscisse puis ordonnée.')});
 add(2,'C2-03','Coordonnées du milieu',()=>{let x=R(-5,5),y=R(-5,5),u=R(1,4),v=R(1,4);return question(`Milieu de ${tex(`A(${x-u};${y-v})`)} et ${tex(`B(${x+u};${y+v})`)} ?`,tex(`(${x};${y})`),[tex(`(${2*x};${2*y})`),tex(`(${x+u};${y+v})`),tex(`(${x-u};${y-v})`)],`Milieu : abscisse = (${x-u}+${x+u})/2 = ${x} ; ordonnée = (${y-v}+${y+v})/2 = ${y}.`)});
 add(2,'C2-04','Extrémité connaissant le milieu',()=>{let x=R(-5,5),y=R(-5,5),u=R(1,4),v=R(1,4);return question(`Si ${tex(`I(${x};${y})`)} est le milieu de ${tex(`A(${x-u};${y-v})`)} et ${tex('B')}, quelles sont les coordonnées de B ?`,tex(`(${x+u};${y+v})`),[tex(`(${u};${v})`),tex(`(${x-u};${y-v})`),tex(`(${2*x-u};${2*y-v})`)],`x_B=2 × ${x}-(${x-u})=${x+u} et y_B=2 × ${y}-(${y-v})=${y+v}.`)});
-add(2,'C2-05','Distance entre deux points',()=>{let a=pick([[3,4,5],[5,12,13],[6,8,10],[8,15,17]]),x=R(-4,4),y=R(-4,4);return question(`Distance entre ${tex(`A(${x};${y})`)} et ${tex(`B(${x+a[0]};${y+a[1]})`)} dans un repère orthonormé ?`,tex(String(a[2])),[tex(String(a[0]+a[1])),tex(String(a[2]**2)),tex(String(Math.abs(a[1]-a[0])))],`AB² = (${a[0]})² + (${a[1]})² = ${a[2]**2}, donc AB = ${a[2]}.`)});
-add(2,'C2-06','Formule de distance',()=>question(`Dans un repère orthonormé, ${tex('AB^2')} est égal à :`,tex('(x_B-x_A)^2+(y_B-y_A)^2'),[tex('(x_B+x_A)^2+(y_B+y_A)^2'),tex('(x_B-x_A)+(y_B-y_A)'),tex('(x_B-x_A)^2-(y_B-y_A)^2')],'On additionne les carrés des différences de coordonnées.'));
+const distanceLetters=()=>pick([['A','B'],['C','D'],['D','E'],['M','N'],['P','Q']]);
+add(2,'C2-05','Distance entre deux points',()=>{
+ const sides=pick([[3,4,5],[5,12,13],[6,8,10],[8,15,17]]),x=R(-4,4),y=R(-4,4),[p,q]=distanceLetters(),squared=!!R(0,1),length=sides[2],value=squared?length*length:length;
+ return question(`Dans un repère orthonormé, on donne ${tex(`${p}(${x};${y})`)} et ${tex(`${q}(${x+sides[0]};${y+sides[1]})`)}. Calculer ${tex(`${p}${q}${squared?'^2':''}`)}.`,tex(String(value)),[tex(String(squared?length:length*length)),tex(String(sides[0]+sides[1])),tex(String(squared?length*length+1:Math.abs(sides[1]-sides[0])))],`${tex(`${p}${q}^2=${sides[0]}^2+${sides[1]}^2=${length*length}`)}${squared?'.':`, donc ${tex(`${p}${q}=\\sqrt{${length*length}}=${length}`)}.`}`);
+});
+add(2,'C2-06','Formule de distance',()=>{
+ const [p,q]=distanceLetters(),squared=!!R(0,1),dx=`(x_${q}-x_${p})`,dy=`(y_${q}-y_${p})`,squares=`${dx}^2+${dy}^2`;
+ const correct=squared?squares:`\\sqrt{${squares}}`;
+ const wrong=squared?[`(x_${q}+x_${p})^2+(y_${q}+y_${p})^2`,`${dx}+${dy}`,`${dx}^2-${dy}^2`]:[squares,`\\sqrt{(x_${q}+x_${p})^2+(y_${q}+y_${p})^2}`,`\\sqrt{${dx}^2-${dy}^2}`];
+ return question(`Dans un repère orthonormé, ${tex(`${p}${q}${squared?'^2':''}`)} est égal à :`,tex(correct),wrong.map(tex),`On calcule les différences des coordonnées, puis la somme de leurs carrés : ${tex(`${p}${q}^2=${squares}`)}.${squared?'':` La distance ${tex(p+q)} est la racine carrée de cette somme.`}`);
+});
 add(2,'C2-07','Parallélogramme et milieux',()=>{let a=R(-4,4),b=R(-4,4);return question(`Les diagonales du quadrilatère ABCD ont le même milieu ${tex(`I(${a};${b})`)}. Quelle est la nature de ABCD ?`, 'ABCD est un parallélogramme',['ABCD est forcément un rectangle','ABCD est forcément un losange','ABCD est forcément un carré'],'Les diagonales ont le même milieu : ABCD est donc un parallélogramme.')});
 add(2,'C2-08','Triangle rectangle',()=>{let a=pick([[3,4,5],[5,12,13],[6,8,10]]);return question(`Un triangle ABC vérifie ${tex(`AB=${a[0]},\\ AC=${a[1]},\\ BC=${a[2]}`)}. Quelle est sa nature ?`,'Rectangle en A',['Rectangle en B','Isocèle en A','Équilatéral'],`AB²+AC²=${a[0]**2}+${a[1]**2}=${a[2]**2}=BC², donc ABC est rectangle en A.`)});
 add(2,'C2-09','Nature d’un quadrilatère',()=>{let kind=pick(['losange','rectangle','carré']);let statement={losange:'ABCD est un parallélogramme dont deux côtés consécutifs ont la même longueur.',rectangle:'ABCD est un parallélogramme possédant un angle droit.',carré:'ABCD est un rectangle dont deux côtés consécutifs ont la même longueur.'};return question(statement[kind]+' Quelle est la nature précise du quadrilatère ABCD ?',kind==='carré'?'Carré':kind==='rectangle'?'Rectangle':'Losange',['Parallélogramme quelconque','Rectangle','Losange','Carré'].filter(x=>x.toLowerCase()!==kind),`On utilise la propriété caractéristique adaptée.`)});
@@ -321,7 +356,6 @@ add(3,'C3-05','Carré d’une différence',()=>{let a=R(1,5),b=R(1,8);return que
 add(3,'C3-06','Produit somme-différence',()=>{let a=R(1,6),b=R(1,8);return question(`Développer ${tex(`(${a}x+${b})(${a}x-${b})`)}.`,tex(`${a*a}x^2-${b*b}`),[tex(`${a*a}x^2+${b*b}`),tex(`${a*a}x^2-${2*a*b}x+${b*b}`),tex(`${a*a}x^2+${2*a*b}x-${b*b}`)],`On utilise ${tex('(a+b)(a-b)=a^2-b^2')}, avec ${tex(`a=${a}x`)} et ${tex(`b=${b}`)}.`)});
 add(3,'C3-07','Facteur commun',()=>{let a=R(2,8),b=R(2,8),c=R(1,8);return question(`Factoriser ${tex(`${a*b}x+${a*c}`)}.`,tex(`${a}(${b}x+${c})`),[tex(`${a}(${b}x+${a*c})`),tex(`${b}(${a}x+${c})`),tex(`${a}(${b}x-${c})`)],'Mettre en évidence un facteur commun.')});
 add(3,'C3-08','Factorisation remarquable',()=>{let a=R(2,6),b=R(2,8);return question(`Factoriser ${tex(`${a*a}x^2-${b*b}`)}.`,tex(`(${a}x-${b})(${a}x+${b})`),[tex(`(${a}x-${b})^2`),tex(`(${a}x+${b})^2`),tex(`(${a*a}x-${b})(${a*a}x+${b})`)],`On utilise ${tex('a^2-b^2=(a-b)(a+b)')}, avec ${tex(`a=${a}x`)} et ${tex(`b=${b}`)}.`)});
-add(3,'C3-10','Produit de fractions',()=>{let a=R(2,8),b=R(3,9),c=R(2,8),d=R(3,9);return question(`${tex(frac(a,b)+'\\times '+frac(c,d))} = ?`,tex(frac(a*c,b*d)),[tex(frac(a+c,b+d)),tex(frac(a*c,b+d)),tex(frac(a+c,b*d))],'On multiplie les numérateurs et les dénominateurs.')});
 add(3,'C3-11','Valeur interdite',()=>{let a=R(2,9);return question(`Pour ${tex(frac('1',`x-${a}`))}, quelle valeur de x est interdite ?`,tex(String(a)),[tex(String(-a)),tex('0'),tex(String(a+1))],'Un dénominateur ne peut pas être nul.')});
 add(3,'C3-13','Simplifier une racine',()=>{let a=R(2,9),b=pick([2,3,5,7]),n=a*a*b;return question(`Simplifier ${tex(`\\sqrt{${n}}`)}.`,tex(`${a}\\sqrt{${b}}`),[tex(`${a*a}\\sqrt{${b}}`),tex(`${a}\\sqrt{${a*b}}`),tex(`\\sqrt{${a*b}}`)],`On repère le carré parfait : ${tex(`${n}=${a*a}\\times ${b}`)} avec ${tex(`${a*a}=${a}^2`)}. Donc ${tex(`\\sqrt{${n}}=\\sqrt{${a*a}\\times ${b}}=${a}\\sqrt{${b}}`)}.`)});
 add(3,'C3-14','Produit de racines',()=>{let p=pick([2,3,5,7]),q=pick([2,3,5,7].filter(v=>v!==p)),k=R(2,3),n=k*k*q;return question(`Calculer et simplifier ${tex(`\\sqrt{${p}}\\times\\sqrt{${n}}`)}.`,tex(`${k}\\sqrt{${p*q}}`),[tex(`\\sqrt{${p+n}}`),tex(`${k*k}\\sqrt{${p*q}}`),tex(`\\sqrt{${p*q}}`)],`On fait apparaître le carré parfait ${tex(`${k*k}=${k}^2`)} : ${tex(`\\sqrt{${p}}\\times\\sqrt{${n}}=\\sqrt{${p}\\times ${k*k}\\times ${q}}=${k}\\sqrt{${p}\\times ${q}}=${k}\\sqrt{${p*q}}`)}.`)});
@@ -341,7 +375,7 @@ add(3,'C3-17','Factoriser par un facteur affine commun',()=>{
  const a=R(1,4),b=signed(),c=R(1,5),d=signed(),e=R(1,5),f=signed();
  const common=`(${affine(a,b)})`,left=`(${affine(c,d)})`,right=`(${affine(e,f)})`;
  const answer=`${common}(${affine(c+e,d+f)})`;
- return question(`Factoriser par le facteur commun ${tex(common)} : ${tex(`${common}${left}+${common}${right}`)}.`,tex(answer),[tex(`${common}(${affine(c+e,d-f)})`),tex(`${common}(${affine(c-e,d+f)})`),tex(`${common}(${affine(c+e,d+f+1)})`)],`On met ${tex(common)} en facteur : ${tex(`${common}[(${affine(c,d)})+(${affine(e,f)})]=${answer}`)}.`);
+ return question(`Factoriser ${tex(`\\begin{aligned}${common}${left}\\\\+${common}${right}\\end{aligned}`)}.`,tex(answer),[tex(`${common}(${affine(c+e,d-f)})`),tex(`${common}(${affine(c-e,d+f)})`),tex(`${common}(${affine(c+e,d+f+1)})`)],`On met ${tex(common)} en facteur : ${tex(`${common}[(${affine(c,d)})+(${affine(e,f)})]=${answer}`)}.`);
 });
 add(3,'C3-18','Factoriser avec un carré et un facteur affine',()=>{
  const a=R(1,4),b=signed(),c=R(1,5),d=signed(),common=`(${affine(a,b)})`,other=`(${affine(c,d)})`;
