@@ -169,6 +169,10 @@ button:focus-visible,summary:focus-visible{outline:3px solid #60a5fa;outline-off
 @media print{.function-figure{margin:3mm 0;max-width:100%}.function-figure figcaption{color:#111;font-size:7pt}.function-curve,.function-guide,.function-horizontal,.function-end,.function-domain,.function-domain-end,.function-domain-bracket,.function-focus{stroke:#111!important}.function-end:not(.open),.function-domain-end:not(.open){fill:#111!important}.function-end.open,.function-domain-end.open,.function-focus{fill:white!important}.function-number,.function-axis-label,.function-guide-label{fill:#111!important}.function-axis{stroke:#444}.function-grid{stroke:#ccc}}
 
 /* Figures de vecteurs : même unité horizontale et verticale. */
+.distributivity-figure{max-width:540px;margin:14px auto;break-inside:avoid}
+.distributivity-figure svg{display:block;width:100%;height:auto;background:#fff;border-radius:12px}
+.distributivity-figure figcaption{font:14px/1.5 system-ui,sans-serif;color:#31535c;margin:5px 0}
+@media print{.distributivity-figure{max-width:100%;margin:3mm 0}.distributivity-figure figcaption{font-size:8pt}.distributivity-figure path{stroke:#111!important}.distributivity-figure text{fill:#111!important}}
 .vector-figure{max-width:600px;margin:13px auto 17px;break-inside:avoid;line-height:1.35}
 .vector-figure svg{display:block;width:100%;height:auto;background:white;border-radius:12px;overflow:visible}
 .vector-figure figcaption{font:11px/1.5 system-ui,sans-serif;font-weight:400;color:#4a6873;margin:5px 0 0}
@@ -303,20 +307,24 @@ add(2,'C2-06','Formule de distance',()=>question(`Dans un repère orthonormé, $
 add(2,'C2-07','Parallélogramme et milieux',()=>{let a=R(-4,4),b=R(-4,4);return question(`Les diagonales du quadrilatère ABCD ont le même milieu ${tex(`I(${a};${b})`)}. Quelle est la nature de ABCD ?`, 'ABCD est un parallélogramme',['ABCD est forcément un rectangle','ABCD est forcément un losange','ABCD est forcément un carré'],'Les diagonales ont le même milieu : ABCD est donc un parallélogramme.')});
 add(2,'C2-08','Triangle rectangle',()=>{let a=pick([[3,4,5],[5,12,13],[6,8,10]]);return question(`Un triangle ABC vérifie ${tex(`AB=${a[0]},\\ AC=${a[1]},\\ BC=${a[2]}`)}. Quelle est sa nature ?`,'Rectangle en A',['Rectangle en B','Isocèle en A','Équilatéral'],`AB²+AC²=${a[0]**2}+${a[1]**2}=${a[2]**2}=BC², donc ABC est rectangle en A.`)});
 add(2,'C2-09','Nature d’un quadrilatère',()=>{let kind=pick(['losange','rectangle','carré']);let statement={losange:'ABCD est un parallélogramme dont deux côtés consécutifs ont la même longueur.',rectangle:'ABCD est un parallélogramme possédant un angle droit.',carré:'ABCD est un rectangle dont deux côtés consécutifs ont la même longueur.'};return question(statement[kind]+' Quelle est la nature précise du quadrilatère ABCD ?',kind==='carré'?'Carré':kind==='rectangle'?'Rectangle':'Losange',['Parallélogramme quelconque','Rectangle','Losange','Carré'].filter(x=>x.toLowerCase()!==kind),`On utilise la propriété caractéristique adaptée.`)});
-// CHAPITRE 3 : 15 familles
+// CHAPITRE 3 : calcul littéral et racines carrées
+function affine(a,b){return a===0?String(b):`${a===1?'':a===-1?'-':a}x${b===0?'':b<0?b:`+${b}`}`}
+function distributivityFigure(a,b,c,d){
+ const first=a*d,second=b*c;
+ return `<figure class="distributivity-figure"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 180" role="img" aria-label="Deux produits en x : ${a}x fois ${d}, puis ${b} fois ${c}x"><defs><marker id="coefficientArrow" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M1 1 8 4.5 1 8" fill="none" stroke="#007d89" stroke-width="1.7"/></marker></defs><path d="M100 68 Q247 2 409 68" fill="none" stroke="#007d89" stroke-width="2.5" marker-end="url(#coefficientArrow)"/><path d="M193 105 Q260 153 323 105" fill="none" stroke="#007d89" stroke-width="2.5" marker-end="url(#coefficientArrow)"/><g font-family="Georgia,serif" font-size="29" fill="#143541" text-anchor="middle"><text x="48" y="99">(</text><text x="105" y="99">${a}x</text><text x="154" y="99">+</text><text x="190" y="99">${b}</text><text x="225" y="99">)</text><text x="263" y="99">(</text><text x="322" y="99">${c}x</text><text x="365" y="99">+</text><text x="409" y="99">${d}</text><text x="449" y="99">)</text></g><text x="255" y="28" text-anchor="middle" font-family="system-ui,sans-serif" font-size="17" fill="#007d89">${a}x × ${d} = ${first}x</text><text x="260" y="174" text-anchor="middle" font-family="system-ui,sans-serif" font-size="17" fill="#007d89">${b} × ${c}x = ${second}x</text></svg><figcaption>Les deux produits qui contiennent exactement un ${tex('x')} donnent le coefficient cherché.</figcaption></figure>`;
+}
 add(3,'C3-01','Distributivité simple',()=>{let a=R(2,9),b=R(2,8),c=R(1,8);return question(`Développer ${tex(`${a}(${b}x+${c})`)}.`,tex(`${a*b}x+${a*c}`),[tex(`${a*b}x+${c}`),tex(`${a+b}x+${a*c}`),tex(`${a*b}x+${a+c}`)],'On distribue le facteur à chacun des termes.')});
 add(3,'C3-02','Double distributivité',()=>{let a=R(1,4),b=R(1,8),c=R(1,4),d=R(1,8),k=a*d+b*c;return question(`Développer ${tex(`(${a}x+${b})(${c}x+${d})`)}.`,tex(`${a*c}x^2+${k}x+${b*d}`),[tex(`${a*c}x^2+${a*d}x+${b*d}`),tex(`${a*c}x^2+${b*c}x+${b*d}`),tex(`${a*c}x^2+${k+1}x+${b*d}`)],`Double distributivité : ${a*c}x² + (${a*d}+${b*c})x + ${b*d} = ${a*c}x²+${k}x+${b*d}.`)});
-add(3,'C3-03','Coefficient du terme en x',()=>{let a=R(2,6),b=R(1,7),c=R(2,6),d=R(1,7),k=a*d+b*c;return question(`Coefficient de ${tex('x')} dans ${tex(`(${a}x+${b})(${c}x+${d})`)} ?`,tex(String(k)),[tex(String(a*c)),tex(String(b*d)),tex(String(a*d))],`Coefficient de x : ${a} × ${d}+${b} × ${c}=${k}.`)});
+add(3,'C3-03','Coefficient du terme en x',()=>{let a=R(2,6),b=R(1,7),c=R(2,6),d=R(1,7),k=a*d+b*c;return {...question(`Coefficient de ${tex('x')} dans ${tex(`(${a}x+${b})(${c}x+${d})`)} ?`,tex(String(k)),[tex(String(a*c)),tex(String(b*d)),tex(String(a*d))],`Les deux termes en ${tex('x')} sont ${tex(`${a}x\\times ${d}=${a*d}x`)} et ${tex(`${b}\\times ${c}x=${b*c}x`)}. Leur somme est ${tex(`${a*d}x+${b*c}x=${k}x`)} : le coefficient de ${tex('x')} est ${tex(String(k))}.`),diagram:distributivityFigure(a,b,c,d)}});
 add(3,'C3-04','Carré d’une somme',()=>{let a=R(1,5),b=R(1,8);return question(`Développer ${tex(`(${a}x+${b})^2`)}.`,tex(`${a*a}x^2+${2*a*b}x+${b*b}`),[tex(`${a*a}x^2+${b*b}`),tex(`${a*a}x^2+${a*b}x+${b*b}`),tex(`${a*a}x^2-${2*a*b}x+${b*b}`)],`On utilise ${tex('(a+b)^2=a^2+2ab+b^2')}, avec ${tex(`a=${a}x`)} et ${tex(`b=${b}`)}. Le double produit vaut ${tex(`2ab=2\\times ${a}x\\times ${b}=${2*a*b}x`)}.`)});
 add(3,'C3-05','Carré d’une différence',()=>{let a=R(1,5),b=R(1,8);return question(`Développer ${tex(`(${a}x-${b})^2`)}.`,tex(`${a*a}x^2-${2*a*b}x+${b*b}`),[tex(`${a*a}x^2+${2*a*b}x+${b*b}`),tex(`${a*a}x^2-${b*b}`),tex(`${a*a}x^2-${a*b}x+${b*b}`)],`On utilise ${tex('(a-b)^2=a^2-2ab+b^2')}, avec ${tex(`a=${a}x`)} et ${tex(`b=${b}`)}. On soustrait le double produit ${tex(`2ab=2\\times ${a}x\\times ${b}=${2*a*b}x`)}.`)});
 add(3,'C3-06','Produit somme-différence',()=>{let a=R(1,6),b=R(1,8);return question(`Développer ${tex(`(${a}x+${b})(${a}x-${b})`)}.`,tex(`${a*a}x^2-${b*b}`),[tex(`${a*a}x^2+${b*b}`),tex(`${a*a}x^2-${2*a*b}x+${b*b}`),tex(`${a*a}x^2+${2*a*b}x-${b*b}`)],`On utilise ${tex('(a+b)(a-b)=a^2-b^2')}, avec ${tex(`a=${a}x`)} et ${tex(`b=${b}`)}.`)});
 add(3,'C3-07','Facteur commun',()=>{let a=R(2,8),b=R(2,8),c=R(1,8);return question(`Factoriser ${tex(`${a*b}x+${a*c}`)}.`,tex(`${a}(${b}x+${c})`),[tex(`${a}(${b}x+${a*c})`),tex(`${b}(${a}x+${c})`),tex(`${a}(${b}x-${c})`)],'Mettre en évidence un facteur commun.')});
 add(3,'C3-08','Factorisation remarquable',()=>{let a=R(2,6),b=R(2,8);return question(`Factoriser ${tex(`${a*a}x^2-${b*b}`)}.`,tex(`(${a}x-${b})(${a}x+${b})`),[tex(`(${a}x-${b})^2`),tex(`(${a}x+${b})^2`),tex(`(${a*a}x-${b})(${a*a}x+${b})`)],`On utilise ${tex('a^2-b^2=(a-b)(a+b)')}, avec ${tex(`a=${a}x`)} et ${tex(`b=${b}`)}.`)});
-add(3,'C3-09','Somme de fractions',()=>{let d=R(3,9),a=R(1,d-1),b=R(1,d-1);return question(`${tex(frac(a,d)+'+'+frac(b,d))} = ?`,tex(frac(a+b,d)),[tex(frac(a+b,2*d)),tex(frac(a*b,d)),tex(frac(a+b,d*d))],'Même dénominateur : on additionne les numérateurs.')});
 add(3,'C3-10','Produit de fractions',()=>{let a=R(2,8),b=R(3,9),c=R(2,8),d=R(3,9);return question(`${tex(frac(a,b)+'\\times '+frac(c,d))} = ?`,tex(frac(a*c,b*d)),[tex(frac(a+c,b+d)),tex(frac(a*c,b+d)),tex(frac(a+c,b*d))],'On multiplie les numérateurs et les dénominateurs.')});
 add(3,'C3-11','Valeur interdite',()=>{let a=R(2,9);return question(`Pour ${tex(frac('1',`x-${a}`))}, quelle valeur de x est interdite ?`,tex(String(a)),[tex(String(-a)),tex('0'),tex(String(a+1))],'Un dénominateur ne peut pas être nul.')});
-add(3,'C3-13','Simplifier une racine',()=>{let a=R(2,9),b=pick([2,3,5,7]);return question(`Simplifier ${tex(`\\sqrt{${a*a*b}}`)}.`,tex(`${a}\\sqrt{${b}}`),[tex(`${a*a}\\sqrt{${b}}`),tex(`${a}\\sqrt{${a*b}}`),tex(`\\sqrt{${a*b}}`)],'Extraire le facteur carré parfait.')});
-add(3,'C3-14','Produit de racines',()=>{let a=R(2,9),b=R(2,9);return question(`${tex(`\\sqrt{${a}}\\times\\sqrt{${b}}`)} = ?`,tex(`\\sqrt{${a*b}}`),[tex(`\\sqrt{${a+b}}`),tex(`${a*b}`),tex(`\\sqrt{${a}}+\\sqrt{${b}}`)],'Le produit de racines positives est la racine du produit.')});
+add(3,'C3-13','Simplifier une racine',()=>{let a=R(2,9),b=pick([2,3,5,7]),n=a*a*b;return question(`Simplifier ${tex(`\\sqrt{${n}}`)}.`,tex(`${a}\\sqrt{${b}}`),[tex(`${a*a}\\sqrt{${b}}`),tex(`${a}\\sqrt{${a*b}}`),tex(`\\sqrt{${a*b}}`)],`On repère le carré parfait : ${tex(`${n}=${a*a}\\times ${b}`)} avec ${tex(`${a*a}=${a}^2`)}. Donc ${tex(`\\sqrt{${n}}=\\sqrt{${a*a}\\times ${b}}=${a}\\sqrt{${b}}`)}.`)});
+add(3,'C3-14','Produit de racines',()=>{let p=pick([2,3,5,7]),q=pick([2,3,5,7].filter(v=>v!==p)),k=R(2,3),n=k*k*q;return question(`Calculer et simplifier ${tex(`\\sqrt{${p}}\\times\\sqrt{${n}}`)}.`,tex(`${k}\\sqrt{${p*q}}`),[tex(`\\sqrt{${p+n}}`),tex(`${k*k}\\sqrt{${p*q}}`),tex(`\\sqrt{${p*q}}`)],`On fait apparaître le carré parfait ${tex(`${k*k}=${k}^2`)} : ${tex(`\\sqrt{${p}}\\times\\sqrt{${n}}=\\sqrt{${p}\\times ${k*k}\\times ${q}}=${k}\\sqrt{${p}\\times ${q}}=${k}\\sqrt{${p*q}}`)}.`)});
 const radicalTerm=(k,d)=>k===0?'0':`${k===1?'':k===-1?'-':k}\\sqrt{${d}}`;
 add(3,'C3-15','Somme et différence de racines',()=>{
  const a=R(2,8),sign=pick([-1,1]),b=pick([1,2,3,4,5,6,7,8,9].filter(v=>sign===1||v!==a)),d=2,k=a+sign*b;
@@ -328,6 +336,26 @@ add(3,'C3-15','Somme et différence de racines',()=>{
 add(3,'C3-16','Quotient de racines',()=>{
  const a=R(2,8),d=pick([2,3,5,7]);
  return question(`Simplifier ${tex(frac(`\\sqrt{${a*a*d}}`,`\\sqrt{${d}}`))}.`,tex(String(a)),[tex(String(a-1)),tex(String(a+1)),tex(String(a*d))],`Le dénominateur est strictement positif. ${tex(`${frac(`\\sqrt{${a*a*d}}`,`\\sqrt{${d}}`)}=\\sqrt{${frac(a*a*d,d)}}=\\sqrt{${a*a}}=${a}`)}.`);
+});
+add(3,'C3-17','Factoriser par un facteur affine commun',()=>{
+ const a=R(1,4),b=signed(),c=R(1,5),d=signed(),e=R(1,5),f=signed();
+ const common=`(${affine(a,b)})`,left=`(${affine(c,d)})`,right=`(${affine(e,f)})`;
+ const answer=`${common}(${affine(c+e,d+f)})`;
+ return question(`Factoriser par le facteur commun ${tex(common)} : ${tex(`${common}${left}+${common}${right}`)}.`,tex(answer),[tex(`${common}(${affine(c+e,d-f)})`),tex(`${common}(${affine(c-e,d+f)})`),tex(`${common}(${affine(c+e,d+f+1)})`)],`On met ${tex(common)} en facteur : ${tex(`${common}[(${affine(c,d)})+(${affine(e,f)})]=${answer}`)}.`);
+});
+add(3,'C3-18','Factoriser avec un carré et un facteur affine',()=>{
+ const a=R(1,4),b=signed(),c=R(1,5),d=signed(),common=`(${affine(a,b)})`,other=`(${affine(c,d)})`;
+ const answer=`${common}(${affine(a+c,b+d)})`;
+ return question(`Factoriser ${tex(`${common}${other}+${common}^2`)}.`,tex(answer),[tex(`${common}(${affine(c,d)})`),tex(`${common}(${affine(2*a+c,2*b+d)})`),tex(`${common}(${affine(a+c,b-d)})`)],`On écrit ${tex(`${common}^2=${common}${common}`)}, puis on met ${tex(common)} en facteur : ${tex(`${common}[(${affine(c,d)})+${common}]=${answer}`)}.`);
+});
+add(3,'C3-19','Développer une identité remarquable avec racines',()=>{
+ const a=R(1,4),p=pick([2,3,5,7]),rad=`\\sqrt{${p}}`,plus=!!R(0,1);
+ if(plus){
+  const sign=pick([-1,1]),operator=sign>0?'+':'-',answer=`${a*a+p}${operator}${2*a}${rad}`;
+  return question(`Développer ${tex(`(${a}${operator}${rad})^2`)}.`,tex(answer),[tex(`${a*a+p}${operator}${a}${rad}`),tex(`${a*a+p}${sign>0?'-':'+'}${2*a}${rad}`),tex(`${a*a+p}`)],`On applique ${tex(sign>0?'(u+v)^2=u^2+2uv+v^2':'(u-v)^2=u^2-2uv+v^2')} avec ${tex(`u=${a}`)} et ${tex(`v=${rad}`)} : ${tex(`${a*a}${operator}${2*a}${rad}+${p}=${answer}`)}.`);
+ }
+ const answer=a*a-p;
+ return question(`Développer ${tex(`(${a}+${rad})(${a}-${rad})`)}.`,tex(String(answer)),[tex(String(a*a+p)),tex(`${a*a+p}+${2*a}${rad}`),tex(`${a*a+p}-${2*a}${rad}`)],`On reconnaît ${tex('(u+v)(u-v)=u^2-v^2')} : ${tex(`${a}^2-(${rad})^2=${a*a}-${p}=${answer}`)}.`);
 });
 
 // CHAPITRE 4 : Information chiffrée — 13 familles
