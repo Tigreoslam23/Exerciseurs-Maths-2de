@@ -13,8 +13,8 @@
 .a4-sheet{background:white;color:black;max-width:740px;min-width:0;margin:auto;padding:29px 35px;box-shadow:0 2px 10px #33415520;font-family:Georgia,'Times New Roman',serif;font-size:11pt;line-height:1.37}
 .sheet-heading{border-bottom:1px solid #111;padding-bottom:9px;margin-bottom:17px;display:flex;justify-content:space-between;gap:6px;align-items:flex-end}
 .sheet-heading h2{margin:0;font-family:inherit;font-size:16pt}.sheet-sub{font-size:9pt;color:#444}.sheet-name{margin-top:12px;font-size:10pt}
-.sheet-columns{columns:2;column-gap:27px;column-rule:1px solid #d4d4d4}.sheet-question{break-inside:avoid;page-break-inside:avoid;margin:0 0 14px}
-.sheet-question .id{font:9px system-ui,sans-serif;color:#777}.sheet-question .ans{margin-top:7px;border-bottom:1px dotted #aaa;height:20px}
+.sheet-columns{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:27px;align-items:start;text-align:left}.sheet-question{break-inside:avoid;page-break-inside:avoid;margin:0 0 14px}
+.sheet-question.wide{grid-column:1 / -1}.sheet-question mjx-container{white-space:nowrap;max-width:100%}.sheet-question .id{font:9px system-ui,sans-serif;color:#777}.sheet-question .ans{margin-top:7px;border-bottom:1px dotted #aaa;height:20px}
 .sheet-correction{font-size:9.7pt;margin-top:6px}.sheet-correction .answer{font-weight:700}.sheet-correction .method{margin-top:4px;color:#262626}
 #paperStatus{min-height:1.2em;color:#334155;font-size:.9rem}
 #printDocument{display:none}
@@ -23,11 +23,11 @@
   html,body{background:white!important;color:black!important;margin:0!important;padding:0!important}
   body>main{display:none!important}#printDocument{display:block!important}
   .a4-sheet{font-size:10pt;max-width:none;width:auto;margin:0!important;padding:0!important;box-shadow:none!important}
-  .sheet-columns{columns:2!important;column-gap:10mm;column-rule:0!important;}
+  .sheet-columns{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;column-gap:10mm;}
   .sheet-heading h2{font-size:15pt}.sheet-question{margin-bottom:10mm}.sheet-question .ans{height:8mm}
   .sheet-correction{font-size:9.3pt}
 }
-@media(max-width:540px){.sheet-window{padding:9px}.a4-sheet{padding:14px;font-size:9.3pt}.sheet-columns{columns:1}.sheet-heading h2{font-size:12pt}}
+@media(max-width:540px){.sheet-window{padding:9px}.a4-sheet{padding:14px;font-size:9.3pt}.sheet-columns{grid-template-columns:minmax(0,1fr)}.sheet-heading h2{font-size:12pt}}
 
 .plain-btn,.skill-practice{font:inherit;border:1px solid #94a3b8;background:#fff;color:#172033;border-radius:10px;padding:9px 12px;cursor:pointer}
 button:focus-visible,summary:focus-visible{outline:3px solid #60a5fa;outline-offset:3px}
@@ -245,11 +245,11 @@ const n=()=>R(2,8),signed=()=>pick([-1,1])*R(1,9),square=()=>R(2,12);
 add(1,'C1-01','Plus petit ensemble',()=>{let a=R(2,19),type=R(0,3),v=[String(a),String(-a),frac(a%10||3,10),frac(a,3*a)][type],ans=['\\mathbb N','\\mathbb Z','\\mathbb D','\\mathbb Q'][type];return question(`Quel est le plus petit ensemble contenant ${tex(v)} ?`,tex(ans),['\\mathbb N','\\mathbb Z','\\mathbb D','\\mathbb Q','\\mathbb R'].map(tex).filter(x=>x!==tex(ans)),`On cherche le plus petit ensemble usuel.`)});
 add(1,'C1-02','Inclusion ou appartenance',()=>{
  const sets=['\\mathbb N','\\mathbb Z','\\mathbb D','\\mathbb Q','\\mathbb R'];
- const symbols=['\\subset','\\not\\subset','\\in','\\notin'];
+ const symbols=['\\subset','\\in','\\notin'];
  let left,right,correct,explanation;
  if(R(0,1)===0){
-  const a=R(0,4),b=pick([0,1,2,3,4].filter(i=>i!==a));
-  left=sets[a];right=sets[b];correct=a<b?'\\subset':'\\not\\subset';
+  const a=R(0,3),b=R(a+1,4);
+  left=sets[a];right=sets[b];correct='\\subset';
   explanation=`On compare deux ensembles : on utilise un symbole d’inclusion. L’ordre est ${tex(sets.join('\\subset'))}. Ainsi ${tex(left+correct+right)}.`;
  }else{
   const kind=R(0,7);let value,level;
@@ -265,7 +265,7 @@ add(1,'C1-02','Inclusion ou appartenance',()=>{
   left=value;right=sets[target];correct=level<=target?'\\in':'\\notin';
   explanation=`On compare un nombre à un ensemble : on utilise ${tex('\\in')} ou ${tex('\\notin')}. Ici ${tex(value)} est ${descriptions[level]}. Ainsi ${tex(left+correct+right)}.`;
  }
- return question(`Compléter : ${tex(left+'\\;\\ldots\\;'+right)}`,tex(correct),symbols.filter(s=>s!==correct).map(tex),explanation);
+ return {q:`Compléter : ${tex(left+'\\;\\ldots\\;'+right)}`,correct:tex(correct),choices:shuffle(symbols.map(tex)),explanation};
 });
 add(1,'C1-03','Écriture décimale',()=>{let d=pick([2,4,5,8,10,20,25]),a=R(1,9),c=pick([3,7,11]),correct=tex(frac(a,d));return question('Quelle fraction possède une écriture décimale finie ?',correct,[tex(frac(a,c)),tex(frac(a,c*3)),tex(frac(a,7*c))],`Un dénominateur réduit ne doit contenir que les facteurs premiers 2 et 5.`)});
 add(1,'C1-04','Fraction décimale',()=>{let a=R(11,99),k=R(1,3);return question(`Écrire ${tex(frac(a,10**k))} sous forme décimale.`,String(a/10**k).replace('.',','),[String(a/10**(k+1)).replace('.',','),String(a/10**(k-1)).replace('.',','),String((a+1)/10**k).replace('.',',')],`Le dénominateur est une puissance de 10.`)});
@@ -290,12 +290,17 @@ add(1,'C1-05','Écriture scientifique',()=>{
  // Pour un coefficient entier, conserver deux chiffres pour le distracteur décalé.
  return scientificQuestion(digits.length===1?digits+'0':digits,R(-8,8));
 });
-add(1,'C1-06','Produit de puissances',()=>{let a=n(),u=R(2,7),v=R(2,6);return question(`${tex(pow(a,u)+'\\times '+pow(a,v))} = ?`,tex(pow(a,u+v)),[tex(pow(a,u*v)),tex(pow(a,u-v)),tex(pow(a,u+v+1))],`Même base : on additionne les exposants, ${u}+${v}=${u+v}.`)});
-add(1,'C1-07','Quotient de puissances',()=>{let a=n(),u=R(5,12),v=R(1,4);return question(`${tex(frac(pow(a,u),pow(a,v)))} = ?`,tex(pow(a,u-v)),[tex(pow(a,u+v)),tex(pow(a,u*v)),tex(pow(a,v-u))],`Même base : on soustrait les exposants, ${u}-${v}=${u-v}.`)});
-add(1,'C1-08','Puissance de puissance',()=>{let a=n(),u=R(2,5),v=R(2,5);return question(`${tex(`(${pow(a,u)})^{${v}}`)} = ?`,tex(pow(a,u*v)),[tex(pow(a,u+v)),tex(pow(a,u**v)),tex(pow(a,u*v+1))],`Puissance d'une puissance : ${u} ×  ${v}=${u*v}.`)});
-add(1,'C1-09','Puissance de produit',()=>{let a=R(2,5),b=R(6,9),e=R(2,5);return question(`${tex(`(${a}\\times ${b})^{${e}}`)} = ?`,tex(`${pow(a,e)}\\times ${pow(b,e)}`),[tex(`${pow(a,e)}\\times ${b}`),tex(`${a}\\times ${pow(b,e)}`),tex(`${pow(a,e+1)}\\times ${pow(b,e)}`)],'La puissance s’applique à chacun des facteurs.')});
-add(1,'C1-10','Exposants négatifs',()=>{let a=n(),e=R(2,7);return question(`${tex(pow(a,-e))} = ?`,tex(frac(1,pow(a,e))),[tex(pow(a,e)),tex(frac(-1,pow(a,e))),tex(frac(1,pow(a,e+1)))],'Un exposant négatif donne l’inverse.')});
-add(1,'C1-11','Règles combinées',()=>{let a=n(),u=R(2,5),v=R(2,4),w=R(1,5),z=R(1,4),k=u*v-w-z;return question(`${tex(frac(`(${pow(a,u)})^{${v}}\\times ${pow(a,-w)}`,pow(a,z)))} = ?`,tex(pow(a,k)),[tex(pow(a,u+v-w-z)),tex(pow(a,u*v+w-z)),tex(pow(a,u*v-w+z))],`Exposant final : ${u} ×  ${v}-${w}-${z}=${k}.`)});
+add(1,'C1-06','Produit de puissances',()=>{let a=n(),u=R(2,7),v=R(2,6);return question(`Écrire le résultat du calcul suivant sous la forme d’une seule puissance, sans calculer sa valeur : ${tex(pow(a,u)+'\\times '+pow(a,v))}.`,tex(pow(a,u+v)),[tex(pow(a,u*v)),tex(pow(a,u-v)),tex(pow(a,u+v+1))],`Même base : on additionne les exposants, ${u}+${v}=${u+v}.`)});
+add(1,'C1-07','Quotient de puissances',()=>{let a=n(),u=R(5,12),v=R(1,4);return question(`Écrire le résultat du calcul suivant sous la forme d’une seule puissance, sans calculer sa valeur : ${tex(frac(pow(a,u),pow(a,v)))}.`,tex(pow(a,u-v)),[tex(pow(a,u+v)),tex(pow(a,u*v)),tex(pow(a,v-u))],`Même base : on soustrait les exposants, ${u}-${v}=${u-v}.`)});
+add(1,'C1-08','Puissance de puissance',()=>{let a=n(),u=R(2,5),v=R(2,5);return question(`Écrire sous la forme d’une seule puissance, sans calculer sa valeur : ${tex(`(${pow(a,u)})^{${v}}`)}.`,tex(pow(a,u*v)),[tex(pow(a,u+v)),tex(pow(a,u**v)),tex(pow(a,u*v+1))],`Puissance d'une puissance : ${u} ×  ${v}=${u*v}.`)});
+add(1,'C1-09','Puissance de produit ou de quotient',()=>{
+ let a=R(2,5),b=R(6,9),e=R(2,5),quotient=pick([true,false]);
+ const expression=quotient?`\\left(${frac(a,b)}\\right)^{${e}}`:`(${a}\\times ${b})^{${e}}`;
+ const combine=(u,v)=>quotient?frac(u,v):`${u}\\times ${v}`;
+ return question(`Écrire sous la forme d’un ${quotient?'quotient':'produit'} de puissances, sans calculer leurs valeurs : ${tex(expression)}.`,tex(combine(pow(a,e),pow(b,e))),[tex(combine(pow(a,e),b)),tex(combine(a,pow(b,e))),tex(combine(pow(a,e+1),pow(b,e)))],`La puissance s’applique ${quotient?'au numérateur et au dénominateur':'à chacun des facteurs'}. On conserve les puissances sans calculer leurs valeurs.`);
+});
+add(1,'C1-10','Exposants négatifs',()=>{let a=n(),e=R(2,7);return question(`Écrire sous la forme d’une fraction à exposant positif, sans calculer la puissance : ${tex(pow(a,-e))}.`,tex(frac(1,pow(a,e))),[tex(pow(a,e)),tex(frac(-1,pow(a,e))),tex(frac(1,pow(a,e+1)))],'Un exposant négatif donne l’inverse.')});
+add(1,'C1-11','Règles combinées',()=>{let a=n(),u=R(2,5),v=R(2,4),w=R(1,5),z=R(1,4),k=u*v-w-z;return question(`Écrire sous la forme d’une seule puissance, sans calculer sa valeur : ${tex(frac(`(${pow(a,u)})^{${v}}\\times ${pow(a,-w)}`,pow(a,z)))}.`,tex(pow(a,k)),[tex(pow(a,u+v-w-z)),tex(pow(a,u*v+w-z)),tex(pow(a,u*v-w+z))],`Exposant final : ${u} ×  ${v}-${w}-${z}=${k}.`)});
 add(1,'C1-12','Exposant manquant',()=>{let a=n(),u=R(2,7),v=R(2,7);return question(`${tex(`${pow(a,u)}\\times ${a}^{\\square}=${pow(a,u+v)}`)}. Quel exposant manque ?`,tex(String(v)),[tex(String(u)),tex(String(u+v)),tex(String(Math.abs(u-v)+1))],`L'exposant recherché est ${u+v}-${u}=${v}.`)});
 const fractionGcd=(a,b)=>b?fractionGcd(b,a%b):Math.abs(a);
 function reducedFraction(a,b){let g=fractionGcd(a,b),sign=b<0?-1:1;return {a:sign*a/g,b:sign*b/g}}
@@ -375,7 +380,7 @@ add(3,'C3-17','Factoriser par un facteur affine commun',()=>{
  const a=R(1,4),b=signed(),c=R(1,5),d=signed(),e=R(1,5),f=signed();
  const common=`(${affine(a,b)})`,left=`(${affine(c,d)})`,right=`(${affine(e,f)})`;
  const answer=`${common}(${affine(c+e,d+f)})`;
- return question(`Factoriser ${tex(`\\begin{aligned}${common}${left}\\\\+${common}${right}\\end{aligned}`)}.`,tex(answer),[tex(`${common}(${affine(c+e,d-f)})`),tex(`${common}(${affine(c-e,d+f)})`),tex(`${common}(${affine(c+e,d+f+1)})`)],`On met ${tex(common)} en facteur : ${tex(`${common}[(${affine(c,d)})+(${affine(e,f)})]=${answer}`)}.`);
+ return question(`Factoriser ${tex(`${common}${left}+${common}${right}`)}.`,tex(answer),[tex(`${common}(${affine(c+e,d-f)})`),tex(`${common}(${affine(c-e,d+f)})`),tex(`${common}(${affine(c+e,d+f+1)})`)],`On met ${tex(common)} en facteur : ${tex(`${common}[(${affine(c,d)})+(${affine(e,f)})]=${answer}`)}.`);
 });
 add(3,'C3-18','Factoriser avec un carré et un facteur affine',()=>{
  const a=R(1,4),b=signed(),c=R(1,5),d=signed(),common=`(${affine(a,b)})`,other=`(${affine(c,d)})`;
@@ -989,7 +994,7 @@ function functionExactFractions(text){
  })));
 }
 function mathFunctionNames(text){return text.split(/(\\\([\s\S]*?\\\))/g).map((part,i)=>i%2?part:part.replace(/\bf\b/g,()=>tex('f')).replace(/\bg\b/g,()=>tex('g'))).join('')}
-function generate(f){for(let t=0;t<50;t++){try{let q=f.fn();if(f.c===6||f.c===8)q={...q,q:mathFunctionNames(q.q)};if(f.c===6){q={...q,q:functionExactFractions(q.q),correct:functionExactFractions(q.correct),choices:q.choices.map(functionExactFractions),explanation:functionExactFractions(q.explanation)}}if(q.choices.length===4&&new Set(q.choices).size===4&&q.choices.includes(q.correct))return {...q,id:f.id,name:f.name,c:f.c}}catch(e){}}throw Error('Impossible de générer cette question. Relance la série.')}
+function generate(f){for(let t=0;t<50;t++){try{let q=f.fn();if(f.c===6||f.c===8)q={...q,q:mathFunctionNames(q.q)};if(f.c===6){q={...q,q:functionExactFractions(q.q),correct:functionExactFractions(q.correct),choices:q.choices.map(functionExactFractions),explanation:functionExactFractions(q.explanation)}}if((q.choices.length===4||(f.id==='C1-02'&&q.choices.length===3))&&new Set(q.choices).size===q.choices.length&&q.choices.includes(q.correct))return {...q,id:f.id,name:f.name,c:f.c}}catch(e){}}throw Error('Impossible de générer cette question. Relance la série.')}
 function showOnly(id){if(id==='setup')updateHomeProgress();['setup','quiz','slides','result','paper','skills'].forEach(v=>el(v).classList.toggle('hidden',v!==id))}
 function beginQuiz(pool,total){
  quizPool=pool;quizTotal=total;series=[];idx=0;score=0;log=[];quizUsed={};
@@ -1141,11 +1146,11 @@ function responseHeight(){return {compact:12,normal:39,large:64}[el('answerSpace
 function worksheetBody(solution){
  const ch=[...new Set(series.map(q=>q.c))].sort((a,b)=>a-b);
  const subtitle='Classe de Seconde — '+ch.map(i=>'Chapitre '+i).join(' · ')+' — '+series.length+' questions';
- const header=`<header class="sheet-heading"><div><h2>${escapeHtml(printTitle())}${solution?' — Corrigé':''}</h2><div class="sheet-sub">${escapeHtml(subtitle)}</div></div><div class="sheet-sub">AutoMaths</div></header>`;
+ const header=`<header class="sheet-heading"><div><h2>${escapeHtml(printTitle())}${solution?' — Corrigé':''}</h2><div class="sheet-sub">${escapeHtml(subtitle)}</div><div class="sheet-sub"><strong>Sans calculatrice</strong></div></div><div class="sheet-sub">AutoMaths</div></header>`;
  const name=(!solution&&el('showName').checked)?'<div class="sheet-name">Nom : ....................................... Prénom : ....................................... Classe : ............</div><div style="height:14px"></div>':'';
  const questions=series.map((q,i)=>{
   const method=solution?`<div class="sheet-correction"><div class="answer">Réponse : ${q.choiceFigures?.[q.correct]||sheetMath(q.correct)}</div><div class="method">${sheetMath(q.explanation)}</div>${q.diagram||''}</div>`:`<div class="ans" style="height:${responseHeight()}px"></div>`;
-  return `<article class="sheet-question"><div><strong>${i+1}.</strong> ${sheetMath(q.q)}</div>${q.figure||''}${method}</article>`
+  return `<article class="sheet-question${q.id==='C3-17'?' wide':''}"><div><strong>${i+1}.</strong> ${sheetMath(q.q)}</div>${q.figure||''}${method}</article>`
  }).join('');
  return header+name+`<div class="sheet-columns">${questions}</div>`;
 }
