@@ -1,9 +1,10 @@
 (()=>{
  const install=document.getElementById('installApp'),status=document.getElementById('offlineStatus'),help=document.getElementById('installHelp'),retry=document.getElementById('retryOffline');
- let deferredPrompt=null,registration=null,offlineReady=false,initializing=false;
+ let deferredPrompt=null,registration=null,offlineReady=false,initializing=false,updateAvailable=false,applying=false,checking=false;
  const standalone=()=>window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
  const supported=window.isSecureContext&&'serviceWorker' in navigator;
  function update(){
+  if(updateAvailable){install.textContent=applying?'Mise à jour…':'Mettre à jour AutoMaths';install.disabled=applying;status.textContent='Une mise à jour est disponible. Ta progression sera conservée.';return}
   install.textContent=standalone()?'Application installée':'Installer AutoMaths';install.disabled=standalone();
   if(offlineReady)status.textContent=navigator.onLine?'Prêt hors connexion · QCM, corrigés et fiches disponibles.':'Mode hors connexion · ta progression reste enregistrée sur cet appareil.';
  }
@@ -27,12 +28,37 @@
    worker.addEventListener('statechange',check);check();
   });
  }
+
+ // Comparer le contenu de la page détecte aussi les mises à jour des chapitres
+ // lorsque le fichier du service worker n'a pas changé.
+ const signature=doc=>[...doc.querySelectorAll('script:not([src]),style')].map(n=>n.textContent).join('\n');
+ const currentSignature=signature(document);
+ async function checkUpdates(){
+  if(checking||!navigator.onLine||applying)return;
+  checking=true;
+  try{
+   if(registration){await registration.update();if(registration.waiting)updateAvailable=true}
+   const response=await fetch(new URL('./index.html',location.href),{cache:'no-store'});
+   if(response.ok){
+    const next=new DOMParser().parseFromString(await response.text(),'text/html');
+    if(next.title===document.title&&next.querySelector('#installApp')&&signature(next)!==currentSignature)updateAvailable=true;
+   }
+   update();
+  }catch(error){/* Une connexion absente ne doit pas interrompre le travail. */}
+  finally{checking=false}
+ }
+ navigator.serviceWorker?.addEventListener('controllerchange',()=>{
+  if(applying)location.reload();
+  else {updateAvailable=true;update()}
+ });
+
  async function prepare(){
   if(initializing)return;initializing=true;retry.hidden=true;
   if(!supported){status.textContent='Pour installer AutoMaths et préparer le mode hors connexion, ouvre sa version en ligne dans un navigateur compatible.';initializing=false;return}
   status.textContent='Préparation du mode hors connexion… Garde cette page ouverte pendant le téléchargement.';
   try{
    registration=await navigator.serviceWorker.register('./sw.js',{scope:'./',updateViaCache:'none'});
+   if(registration.waiting){updateAvailable=true;update()}
    const worker=await readyWorker(registration);
    offlineReady=await query(worker);
    if(!offlineReady)throw Error('Cache incomplet');
@@ -40,7 +66,7 @@
    // Une nouvelle version se prépare sans recharger ni interrompre un QCM en cours.
    registration.addEventListener('updatefound',()=>{
     const next=registration.installing;
-    next?.addEventListener('statechange',async()=>{if(next.state==='activated'){try{offlineReady=await query(next);update()}catch(error){}}});
+    next?.addEventListener('statechange',async()=>{if(next.state==='installed'&&navigator.serviceWorker.controller){updateAvailable=true;update()}else if(next.state==='activated'){try{offlineReady=await query(next);update()}catch(error){}}});
    });
   }catch(error){status.textContent='Mode hors connexion non prêt. Vérifie ta connexion puis réessaie.';retry.hidden=false}
   finally{initializing=false}
@@ -48,11 +74,20 @@
  window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();deferredPrompt=event;update()});
  window.addEventListener('appinstalled',()=>{deferredPrompt=null;install.textContent='Application installée';install.disabled=true;help.hidden=true});
  install.addEventListener('click',async()=>{
+  if(updateAvailable){
+   applying=true;update();
+   if(registration?.waiting)registration.waiting.postMessage({type:'SKIP_WAITING'});
+   else location.reload();
+   return;
+  }
   if(deferredPrompt){const prompt=deferredPrompt;deferredPrompt=null;await prompt.prompt();await prompt.userChoice}
   else instructions();
  });
  retry.addEventListener('click',prepare);
- window.addEventListener('online',()=>{if(!offlineReady)prepare();else update()});
+ window.addEventListener('online',()=>{if(!offlineReady)prepare();else update();checkUpdates()});
  window.addEventListener('offline',update);
- update();prepare();
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkUpdates()});
+ window.addEventListener('focus',checkUpdates);
+ setInterval(()=>{if(!document.hidden)checkUpdates()},60000);
+ update();prepare().then(checkUpdates);
 })();
