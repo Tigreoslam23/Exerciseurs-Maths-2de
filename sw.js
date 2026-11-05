@@ -1,5 +1,5 @@
 /* AutoMaths: cache borné à l’application, sans modifier les autres exerciseurs. */
-const VERSION='automaths-offline-v2';
+const VERSION='automaths-offline-v3';
 const CACHE=VERSION;
 const ROOT=new URL('./',self.location.href);
 const APP=new URL('index.html',ROOT).href;
@@ -8,13 +8,15 @@ const ASSETS=['./','index.html','manifest.webmanifest','pwa.js','slides.css','sl
 self.addEventListener('install',event=>event.waitUntil((async()=>{
  const cache=await caches.open(CACHE);
  try{await cache.addAll(ASSETS.map(url=>new Request(url,{cache:'reload',mode:'cors'})))}catch(error){await caches.delete(CACHE);throw error}
- await self.skipWaiting();
+ // La première installation s’active immédiatement ; les suivantes attendent le bouton.
+ if(!self.registration.active)await self.skipWaiting();
 })()));
 self.addEventListener('activate',event=>event.waitUntil((async()=>{
  for(const name of await caches.keys())if(name.startsWith('automaths-offline-')&&name!==CACHE)await caches.delete(name);
  await self.clients.claim();
 })()));
 self.addEventListener('message',event=>{
+ if(event.data?.type==='SKIP_WAITING'){event.waitUntil(self.skipWaiting());return}
  if(event.data?.type!=='OFFLINE_STATUS'||!event.ports[0])return;
  event.waitUntil((async()=>{
   const cache=await caches.open(CACHE),found=await Promise.all(ASSETS.map(url=>cache.match(url)));
